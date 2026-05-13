@@ -126,24 +126,7 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
 .btn-add{background:rgba(56,189,248,.12);border:1px solid var(--b2);border-radius:9px;color:var(--blue);font-family:var(--f);font-size:11px;font-weight:700;padding:6px 13px;cursor:pointer;flex-shrink:0;transition:all .2s;display:flex;align-items:center;gap:5px;}
 .btn-add:hover{background:rgba(56,189,248,.2);}
 
-/* ─── LOGIN ─── */
-#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#020817 0%,#0a1628 50%,#020c1a 100%);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;}
-.login-box{background:rgba(15,23,42,.95);border:1px solid rgba(56,189,248,.25);border-radius:16px;padding:36px 32px;width:100%;max-width:380px;text-align:center;}
-.login-logo{width:52px;height:52px;background:linear-gradient(135deg,var(--blue),#0ea5e9);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 18px;}
-.login-title{font-size:22px;font-weight:800;letter-spacing:.04em;margin-bottom:4px;}
-.login-sub{font-size:11px;color:var(--muted);letter-spacing:.1em;margin-bottom:28px;}
-.login-fg{position:relative;margin-bottom:14px;}
-.login-fg input{width:100%;background:var(--bg2);border:1.5px solid var(--b);border-radius:10px;color:var(--text);font-family:var(--m);font-size:16px;padding:13px 44px 13px 16px;outline:none;text-align:center;letter-spacing:.12em;transition:border-color .2s;}
-.login-fg input:focus{border-color:var(--b2);}
-.login-fg .eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0;}
-.login-btn{width:100%;background:linear-gradient(135deg,var(--blue),#0ea5e9);border:none;border-radius:10px;color:#fff;font-family:var(--f);font-size:14px;font-weight:700;padding:13px;cursor:pointer;letter-spacing:.05em;transition:opacity .2s;margin-top:4px;}
-.login-btn:hover{opacity:.9;}
-.login-btn:active{opacity:.8;}
-.login-err{color:var(--red);font-size:12px;margin-top:10px;min-height:18px;transition:opacity .3s;}
-.login-remember{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:14px;font-size:11px;color:var(--muted);cursor:pointer;}
-.login-remember input{accent-color:var(--blue);width:14px;height:14px;cursor:pointer;}
-.login-shake{animation:shake .4s ease;}
-@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
 </style>
 </head>
 <body>
@@ -153,21 +136,24 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
 </div>
 
 <!-- ─── LOGIN ─── -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">💨</div>
-    <div class="login-title">SMOKE & SMILE</div>
-    <div class="login-sub">GESTION · NARBONNE</div>
-    <div class="login-fg">
-      <input type="password" id="pwd-input" placeholder="Mot de passe"
-        onkeydown="if(event.key==='Enter')tryLogin()"
-        autocomplete="current-password"/>
-      <button class="eye" id="eye-btn" onclick="toggleEye()" tabindex="-1">👁</button>
+<div id="login-screen" style="position:fixed;inset:0;background:linear-gradient(135deg,#020817,#0a1628,#020c1a);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Syne',sans-serif;">
+  <div id="login-box" style="background:rgba(15,23,42,.97);border:1px solid rgba(56,189,248,.3);border-radius:16px;padding:36px 32px;width:100%;max-width:360px;text-align:center;transition:transform .15s;">
+    <div style="width:52px;height:52px;background:linear-gradient(135deg,#38bdf8,#0ea5e9);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px;">💨</div>
+    <div style="font-size:20px;font-weight:800;letter-spacing:.04em;margin-bottom:3px;">SMOKE & SMILE</div>
+    <div style="font-size:10px;color:#64748b;letter-spacing:.12em;margin-bottom:26px;">GESTION · NARBONNE</div>
+    <div style="position:relative;margin-bottom:12px;">
+      <input id="pwd-input" type="password" placeholder="Mot de passe"
+        style="width:100%;background:#0a1628;border:1.5px solid rgba(56,189,248,.25);border-radius:10px;color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:16px;padding:13px 44px 13px 16px;outline:none;text-align:center;letter-spacing:.1em;box-sizing:border-box;"/>
+      <button id="eye-btn" type="button"
+        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#64748b;cursor:pointer;font-size:16px;padding:4px;">👁</button>
     </div>
-    <button class="login-btn" onclick="tryLogin()">Connexion →</button>
-    <div class="login-err" id="login-err"></div>
-    <label class="login-remember">
-      <input type="checkbox" id="remember-me" checked/>
+    <button id="login-btn" type="button"
+      style="width:100%;background:linear-gradient(135deg,#38bdf8,#0ea5e9);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:13px;cursor:pointer;letter-spacing:.05em;margin-bottom:10px;">
+      Connexion →
+    </button>
+    <div id="login-err" style="color:#f43f5e;font-size:12px;min-height:18px;margin-bottom:8px;"></div>
+    <label style="display:flex;align-items:center;gap:8px;justify-content:center;font-size:11px;color:#64748b;cursor:pointer;">
+      <input id="remember-me" type="checkbox" checked style="accent-color:#38bdf8;width:14px;height:14px;cursor:pointer;"/>
       Rester connecté sur cet appareil
     </label>
   </div>
@@ -299,6 +285,86 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
   </div>
 </div>
 
+<script>
+// ─── LOGIN — script autonome ───────────────────────────────
+(function(){
+  var PWD_HASH = 'e0b44ff85e15124aa08c875f0bd34152d6b49cfe31154dbe57edd78ef9e3664d';
+  var AUTH_KEY = 'ss_auth';
+
+  function sha256(str){
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+      .then(function(buf){
+        return Array.from(new Uint8Array(buf))
+          .map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+      });
+  }
+
+  function shake(){
+    var box = document.getElementById('login-box');
+    box.style.transform='translateX(-8px)';
+    setTimeout(function(){ box.style.transform='translateX(8px)'; },80);
+    setTimeout(function(){ box.style.transform='translateX(-5px)'; },160);
+    setTimeout(function(){ box.style.transform='translateX(5px)'; },240);
+    setTimeout(function(){ box.style.transform='translateX(0)'; },320);
+  }
+
+  function doLogin(){
+    var pwd = document.getElementById('pwd-input').value;
+    if(!pwd) return;
+    var errEl = document.getElementById('login-err');
+    sha256(pwd).then(function(hash){
+      if(hash === PWD_HASH){
+        var remember = document.getElementById('remember-me').checked;
+        if(remember) localStorage.setItem(AUTH_KEY,'1');
+        else sessionStorage.setItem(AUTH_KEY,'1');
+        document.getElementById('login-screen').style.display='none';
+        if(typeof bootApp === 'function') bootApp();
+      } else {
+        errEl.textContent = 'Mot de passe incorrect';
+        shake();
+        setTimeout(function(){ errEl.textContent=''; }, 2500);
+        document.getElementById('pwd-input').select();
+      }
+    });
+  }
+
+  function toggleEye(){
+    var inp = document.getElementById('pwd-input');
+    var btn = document.getElementById('eye-btn');
+    if(inp.type === 'password'){ inp.type='text'; btn.textContent='🙈'; }
+    else { inp.type='password'; btn.textContent='👁'; }
+  }
+
+  function isAuth(){
+    return localStorage.getItem(AUTH_KEY)==='1' || sessionStorage.getItem(AUTH_KEY)==='1';
+  }
+
+  window.logout = function(){
+    localStorage.removeItem(AUTH_KEY);
+    sessionStorage.removeItem(AUTH_KEY);
+    location.reload();
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    var loginBtn = document.getElementById('login-btn');
+    var eyeBtn   = document.getElementById('eye-btn');
+    var pwdInput = document.getElementById('pwd-input');
+    if(loginBtn) loginBtn.addEventListener('click', doLogin);
+    if(eyeBtn)   eyeBtn.addEventListener('click', toggleEye);
+    if(pwdInput) pwdInput.addEventListener('keydown', function(e){
+      if(e.key==='Enter') doLogin();
+    });
+
+    if(isAuth()){
+      document.getElementById('login-screen').style.display='none';
+      // bootApp sera appelé quand le script principal sera prêt
+      document.addEventListener('appReady', function(){ if(typeof bootApp==='function') bootApp(); });
+    } else {
+      if(pwdInput) setTimeout(function(){ pwdInput.focus(); }, 100);
+    }
+  });
+})();
+</script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
@@ -759,56 +825,6 @@ function renderDetail(){
 }
 
 // ═══════════════════════════════════════
-// AUTHENTIFICATION
-// ═══════════════════════════════════════
-const PWD_HASH='e0b44ff85e15124aa08c875f0bd34152d6b49cfe31154dbe57edd78ef9e3664d'; // SHA-256 de "SmileSmoke2026"
-const AUTH_KEY='ss_auth';
-
-async function sha256(str){
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-async function tryLogin(){
-  const pwd=$('pwd-input').value;
-  if(!pwd) return;
-  const hash=await sha256(pwd);
-  if(hash===PWD_HASH){
-    const remember=$('remember-me')?.checked;
-    if(remember) localStorage.setItem(AUTH_KEY,'1');
-    else sessionStorage.setItem(AUTH_KEY,'1');
-    $('login-screen').style.display='none';
-    $('pwd-input').value='';
-    bootApp();
-  } else {
-    const box=$('login-screen').querySelector('.login-box');
-    $('login-err').textContent='Mot de passe incorrect';
-    box.classList.remove('login-shake');
-    void box.offsetWidth; // reflow
-    box.classList.add('login-shake');
-    $('pwd-input').select();
-    setTimeout(()=>$('login-err').textContent='',2500);
-  }
-}
-
-function toggleEye(){
-  const inp=$('pwd-input');
-  const isHidden=inp.type==='password';
-  inp.type=isHidden?'text':'password';
-  $('eye-btn').textContent=isHidden?'🙈':'👁';
-}
-
-function isAuthenticated(){
-  return localStorage.getItem(AUTH_KEY)==='1' || sessionStorage.getItem(AUTH_KEY)==='1';
-}
-
-function logout(){
-  localStorage.removeItem(AUTH_KEY);
-  sessionStorage.removeItem(AUTH_KEY);
-  location.reload();
-}
-
-// ═══════════════════════════════════════
 // SAISIE MANUELLE
 // ═══════════════════════════════════════
 let _editDs=null;
@@ -977,15 +993,25 @@ setupDrop($('dz'),$('fi1'));
 setupDrop($('edrop'),$('fi0'));
 $('fi0').addEventListener('change',e=>{handleFile(e.target.files[0]);e.target.value='';});
 
-(async()=>{
+async function bootApp(){
   const ok=await autoConnect();
   if(ok){
+    sync('sy','Chargement…');
     await loadRender();
-    setSyncStatus('ok','Synchronisé');
   } else {
-    toast('❌ Impossible de se connecter à Firebase','var(--red)');
+    sync('','Erreur');
+    toast('❌ Connexion Firebase impossible','var(--red)');
   }
-})();
+}
+
+// Démarrage — vérifie si déjà authentifié
+document.addEventListener('DOMContentLoaded', function(){
+  var AUTH_KEY='ss_auth';
+  var isAuth = localStorage.getItem(AUTH_KEY)==='1' || sessionStorage.getItem(AUTH_KEY)==='1';
+  if(isAuth){
+    document.dispatchEvent(new Event('appReady'));
+  }
+});
 </script>
 </body>
 </html>
