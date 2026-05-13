@@ -179,8 +179,12 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
   <h1>SMOKE & SMILE</h1>
   <div id="empty-sync" style="font-family:var(--m);font-size:11px;color:var(--amber);margin-bottom:4px;min-height:20px"></div>
   <p>Importe ton fichier <strong style="color:var(--blue)">Top_Caisse_Analyse</strong> pour démarrer le suivi annuel.</p>
-  <div class="dbig" id="edrop"><div class="dbi">📂</div><div class="dbt">Glisse ton fichier ici</div><div class="dbs">.xlsx exporté depuis ta caisse · ou clique</div></div>
   <input type="file" id="fi0" accept=".xlsx,.xls" style="display:none"/>
+  <label for="fi0" id="edrop" class="dbig">
+    <div class="dbi">📂</div>
+    <div class="dbt">Clique ici pour choisir ton fichier</div>
+    <div class="dbs">.xlsx exporté depuis ta caisse</div>
+  </label>
 </div>
 
 <div id="app" style="display:none;flex-direction:column;height:100%;">
@@ -194,10 +198,13 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
     </div>
     <button onclick="switchShop()" style="background:none;border:1px solid var(--b);border-radius:8px;color:var(--muted);font-family:var(--f);font-size:10px;padding:4px 10px;cursor:pointer;flex-shrink:0;white-space:nowrap;" title="Changer d'établissement">⇄ Changer</button>
     <div id="sync-ind"><div id="sdot"></div><span id="stxt">—</span></div>
-    <div class="dz" id="dz" style="margin-left:auto"><span style="font-size:17px">📂</span><div><div class="dz-l">Importer</div><div class="dz-s">.xlsx · sync cloud</div></div></div>
     <input type="file" id="fi1" accept=".xlsx,.xls" style="display:none"/>
+    <label for="fi1" class="dz" style="margin-left:auto;cursor:pointer">
+      <span style="font-size:17px">📂</span>
+      <div><div class="dz-l">Importer un fichier</div><div class="dz-s">.xlsx · sync cloud</div></div>
+    </label>
     <button class="btn-add" onclick="openModal(null)">＋ Saisie manuelle</button>
-    <button onclick="logout()" style="background:none;border:1px solid var(--b);border-radius:9px;color:var(--muted);font-family:var(--f);font-size:11px;padding:6px 12px;cursor:pointer;flex-shrink:0;transition:all .2s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">⎋ Déconnexion</button>
+    <button id="btn-logout" style="background:none;border:1px solid rgba(56,189,248,.2);border-radius:9px;color:#64748b;font-family:'Syne',sans-serif;font-size:11px;padding:6px 12px;cursor:pointer;flex-shrink:0;">⎋ Déco.</button>
   </div>
   <div id="tabs">
     <button class="tab active" data-page="annual">Annuel</button>
@@ -1043,7 +1050,13 @@ async function resetAll(){
 
 // ── FILE HANDLING ──
 async function handleFile(f){
-  if(!f||!db){toast('Firebase non connecté','var(--red)');return;}
+  if(!f){ toast('Aucun fichier sélectionné','var(--amber)'); return; }
+  if(!db){
+    toast('⏳ Connexion en cours, réessaie dans 2 secondes…','var(--amber)');
+    // Retry once after delay
+    setTimeout(function(){ handleFile(f); }, 2000);
+    return;
+  }
   prog(10);
   const r=new FileReader();
   r.onload=async e=>{
@@ -1082,40 +1095,42 @@ document.querySelectorAll('.tab').forEach(btn=>{
 });
 
 // ── BOOT ──
-// Setup drag-and-drop after DOM is ready
 document.addEventListener('DOMContentLoaded', function(){
-  function setupDropZone(zoneId, inputId){
-    var zone  = document.getElementById(zoneId);
-    var input = document.getElementById(inputId);
-    if(!zone || !input){ console.warn('Drop zone not found:', zoneId, inputId); return; }
-
-    // Click to browse
-    zone.addEventListener('click', function(e){
-      e.stopPropagation();
-      input.click();
+  // Écoute les inputs fichier directement (méthode la plus fiable)
+  function bindInput(id){
+    var inp = document.getElementById(id);
+    if(!inp) return;
+    inp.addEventListener('change', function(e){
+      var file = e.target.files && e.target.files[0];
+      if(file) handleFile(file);
+      inp.value = '';
     });
+  }
+  bindInput('fi0');
+  bindInput('fi1');
 
-    // Drag events — stopPropagation prevents global handler from interfering
-    zone.addEventListener('dragenter', function(e){ e.preventDefault(); e.stopPropagation(); zone.style.borderColor='#38bdf8'; zone.style.background='rgba(56,189,248,.08)'; });
-    zone.addEventListener('dragover',  function(e){ e.preventDefault(); e.stopPropagation(); });
-    zone.addEventListener('dragleave', function(e){ e.preventDefault(); e.stopPropagation(); zone.style.borderColor=''; zone.style.background=''; });
-    zone.addEventListener('drop',      function(e){
+  // Drag & drop sur les zones label
+  function bindDrop(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('dragenter', function(e){ e.preventDefault(); e.stopPropagation(); el.style.borderColor='#38bdf8'; el.style.background='rgba(56,189,248,.1)'; });
+    el.addEventListener('dragover',  function(e){ e.preventDefault(); e.stopPropagation(); });
+    el.addEventListener('dragleave', function(e){ e.preventDefault(); e.stopPropagation(); el.style.borderColor=''; el.style.background=''; });
+    el.addEventListener('drop',      function(e){
       e.preventDefault(); e.stopPropagation();
-      zone.style.borderColor=''; zone.style.background='';
+      el.style.borderColor=''; el.style.background='';
       var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
       if(file) handleFile(file);
     });
-
-    // File input change
-    input.addEventListener('change', function(e){
-      var file = e.target.files && e.target.files[0];
-      if(file) handleFile(file);
-      input.value = '';
-    });
   }
+  bindDrop('edrop');
+  bindDrop('fi1-label'); // label header zone
 
-  setupDropZone('dz',    'fi1');
-  setupDropZone('edrop', 'fi0');
+  // Bouton déconnexion
+  var btnLogout = document.getElementById('btn-logout');
+  if(btnLogout) btnLogout.addEventListener('click', function(){
+    if(typeof window.logout === 'function') window.logout();
+  });
 });
 
 window.bootApp = async function bootApp(){
