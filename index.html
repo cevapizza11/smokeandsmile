@@ -206,8 +206,32 @@ const firebaseConfig = {
       <div id="mgrid"></div>
       <div id="mdet" style="display:none">
         <div class="kg" id="mkpis"></div>
-        <div class="card"><div class="ct">CA par jour — <span id="lmon"></span></div><div class="cw"><canvas id="can-m"></canvas></div></div>
-        <div class="card"><div class="ct">Top catégories</div><div class="cw" style="height:200px"><canvas id="can-cat"></canvas></div></div>
+
+        <!-- Tableau jour par jour -->
+        <div class="card">
+          <div class="ct">Détail jour par jour — <span id="lmon"></span></div>
+          <div style="overflow-x:auto"><table class="tbl" id="tabl-daily"></table></div>
+        </div>
+
+        <!-- Chart CA bar -->
+        <div class="card"><div class="ct">CA journalier — graphique</div><div class="cw"><canvas id="can-m"></canvas></div></div>
+
+        <!-- Top catégories chart -->
+        <div class="card"><div class="ct">Top catégories du mois</div><div class="cw" style="height:200px"><canvas id="can-cat"></canvas></div></div>
+
+        <!-- Ventes produits par jour -->
+        <div class="card" id="card-prods-day">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div class="ct" style="margin-bottom:0">Ventes produits — <span id="lmon2"></span></div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font-size:10px;color:var(--muted)">Vue :</span>
+              <button id="btn-view-day" onclick="setProdView('day')" style="border:1px solid var(--b2);background:rgba(56,189,248,.1);color:var(--blue);padding:4px 12px;border-radius:16px;font-family:var(--f);font-size:10px;font-weight:700;cursor:pointer">Par jour</button>
+              <button id="btn-view-total" onclick="setProdView('total')" style="border:1px solid var(--b);background:none;color:var(--muted);padding:4px 12px;border-radius:16px;font-family:var(--f);font-size:10px;cursor:pointer">Total mois</button>
+            </div>
+          </div>
+          <div id="prods-view-day" style="overflow-x:auto"><table class="tbl" id="tabl-prods-day"></table></div>
+          <div id="prods-view-total" style="display:none;overflow-x:auto"><table class="tbl" id="tabl-prods-total"></table></div>
+        </div>
       </div>
     </div>
 
@@ -578,21 +602,135 @@ function renderMonthly(){
 window.sMYear=y=>{sMY=y;sMon=null;renderMonthly();};
 window.sMon=mk=>{sMon=mk;renderMonthly();};
 
+let _prodView='day';
+window.setProdView=function(v){
+  _prodView=v;
+  $('prods-view-day').style.display=v==='day'?'block':'none';
+  $('prods-view-total').style.display=v==='total'?'block':'none';
+  $('btn-view-day').style.background=v==='day'?'rgba(56,189,248,.1)':'none';
+  $('btn-view-day').style.color=v==='day'?'var(--blue)':'var(--muted)';
+  $('btn-view-day').style.borderColor=v==='day'?'var(--b2)':'var(--b)';
+  $('btn-view-total').style.background=v==='total'?'rgba(56,189,248,.1)':'none';
+  $('btn-view-total').style.color=v==='total'?'var(--blue)':'var(--muted)';
+  $('btn-view-total').style.borderColor=v==='total'?'var(--b2)':'var(--b)';
+};
+
 function renderMonthDet(mk,M){
   const m=M[mk];
   $('mdet').style.display='block';
   const[yr,mo]=mk.split('-');
-  $('lmon').textContent=MO[+mo-1]+' '+yr;
+  const mLabel=MO[+mo-1]+' '+yr;
+  $('lmon').textContent=mLabel;
+  $('lmon2').textContent=mLabel;
+
+  // ── KPIs
   $('mkpis').innerHTML=[
-    {l:'CA du mois',v:fmt(m.ca),s:`${m.nbDays} jours`,c:'var(--blue)'},
+    {l:'CA du mois',v:fmt(m.ca),s:m.nbDays+' jours',c:'var(--blue)'},
     {l:'CA Moyen/Jour',v:fmtS(m.nbDays?m.ca/m.nbDays:0),s:'',c:'var(--amber)'},
     {l:'CB',v:pct(m.cb,m.ca),s:fmt(m.cb),c:'var(--blue)'},
     {l:'Espèces',v:pct(m.esp,m.ca),s:fmt(m.esp),c:'var(--purple)'},
   ].map(k=>`<div class="kpi"><div class="kl">${k.l}</div><div class="kv" style="color:${k.c}">${k.v}</div><div class="ks">${k.s}</div></div>`).join('');
+
+  // ── Jours du mois
   const dk=Object.keys(LD).filter(ds=>ds.startsWith(mk)).sort();
-  dc('m');CH['m']=new Chart($('can-m').getContext('2d'),{type:'bar',data:{labels:dk.map(ds=>ds.slice(8)),datasets:[{label:'CA',data:dk.map(ds=>LD[ds].ca||0),backgroundColor:'rgba(56,189,248,.75)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:{...TICKM,callback:v=>v+'€'}}}}});
+
+  // ── Tableau jour par jour
+  let bestDay=dk.reduce((a,b)=>(LD[a]?.ca||0)>(LD[b]?.ca||0)?a:b, dk[0]);
+  $('tabl-daily').innerHTML=`
+    <thead><tr>
+      <th style="text-align:left">Date</th>
+      <th>CA</th><th>CB</th><th>Espèces</th><th>% CB</th><th>% Esp.</th>
+    </tr></thead>
+    <tbody>${dk.map(ds=>{
+      const d=LD[ds];
+      const isBest=ds===bestDay;
+      const label=ds.slice(8)+'/'+ds.slice(5,7);
+      return `<tr style="background:${isBest?'rgba(56,189,248,.05)':'transparent'}">
+        <td style="font-weight:${isBest?700:400};color:${isBest?'var(--blue)':'var(--text)'}">${label}${isBest?' 🏆':''}</td>
+        <td class="mn" style="color:${isBest?'var(--blue)':'var(--text)'};font-weight:${isBest?700:400}">${fmt(d.ca||0)}</td>
+        <td class="mn" style="color:var(--blue)">${fmt(d.cb||0)}</td>
+        <td class="mn" style="color:var(--amber)">${fmt(d.esp||0)}</td>
+        <td class="mn" style="color:var(--blue);font-size:11px">${pct(d.cb,d.ca)}</td>
+        <td class="mn" style="color:var(--amber);font-size:11px">${pct(d.esp,d.ca)}</td>
+      </tr>`;
+    }).join('')}</tbody>
+    <tfoot><tr style="border-top:1px solid var(--b2)">
+      <td style="font-weight:700">TOTAL</td>
+      <td class="mn" style="color:var(--green);font-weight:700">${fmt(m.ca)}</td>
+      <td class="mn" style="color:var(--blue);font-weight:700">${fmt(m.cb)}</td>
+      <td class="mn" style="color:var(--amber);font-weight:700">${fmt(m.esp)}</td>
+      <td class="mn" style="color:var(--blue)">${pct(m.cb,m.ca)}</td>
+      <td class="mn" style="color:var(--amber)">${pct(m.esp,m.ca)}</td>
+    </tr></tfoot>`;
+
+  // ── Chart CA bar
+  dc('m');CH['m']=new Chart($('can-m').getContext('2d'),{type:'bar',
+    data:{labels:dk.map(ds=>ds.slice(8)),datasets:[{
+      label:'CA',data:dk.map(ds=>LD[ds].ca||0),
+      backgroundColor:dk.map(ds=>ds===bestDay?'rgba(56,189,248,.95)':'rgba(56,189,248,.5)'),
+      borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:TIP},
+      scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:{...TICKM,callback:v=>v+'€'}}}}});
+
+  // ── Chart catégories
   const cats=Object.entries(m.cats).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  dc('cat');CH['cat']=new Chart($('can-cat').getContext('2d'),{type:'bar',data:{labels:cats.map(c=>c[0].length>15?c[0].slice(0,14)+'…':c[0]),datasets:[{data:cats.map(c=>c[1]),backgroundColor:CCL,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:{...TICKM,callback:v=>v+'€'}},y:{grid:{display:false},ticks:TICK}}}});
+  dc('cat');CH['cat']=new Chart($('can-cat').getContext('2d'),{type:'bar',
+    data:{labels:cats.map(c=>c[0].length>15?c[0].slice(0,14)+'…':c[0]),datasets:[{data:cats.map(c=>c[1]),backgroundColor:CCL,borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:TIP},
+      scales:{x:{grid:{color:GRID},ticks:{...TICKM,callback:v=>v+'€'}},y:{grid:{display:false},ticks:TICK}}}});
+
+  // ── Produits par jour (vue jour à jour)
+  // Collect all unique products across the month
+  const allProds=new Set();
+  dk.forEach(ds=>Object.keys(LD[ds].prods||{}).forEach(p=>allProds.add(p)));
+  const prodList=[...allProds].map(p=>{
+    const total=dk.reduce((s,ds)=>s+(LD[ds].prods?.[p]?.ca||0),0);
+    return{name:p,total};
+  }).sort((a,b)=>b.total-a.total).slice(0,20);
+
+  if(prodList.length){
+    // View: par jour — columns = days, rows = products
+    const shortDays=dk.map(ds=>ds.slice(8)+'/'+ds.slice(5,7));
+    $('tabl-prods-day').innerHTML=`
+      <thead><tr>
+        <th style="text-align:left;min-width:140px">Produit</th>
+        ${shortDays.map(d=>`<th style="min-width:72px">${d}</th>`).join('')}
+        <th>Total</th>
+      </tr></thead>
+      <tbody>${prodList.map(p=>`<tr>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">${p.name}</td>
+        ${dk.map(ds=>{
+          const pd=LD[ds].prods?.[p.name];
+          return pd?`<td class="mn" style="color:var(--blue);font-size:11px">${fmtS(pd.ca)}<br><span style="color:var(--muted);font-size:9px">${pd.qte} u.</span></td>`:`<td class="mn" style="color:var(--dim)">—</td>`;
+        }).join('')}
+        <td class="mn" style="color:var(--amber);font-weight:700;font-size:11px">${fmtS(p.total)}</td>
+      </tr>`).join('')}</tbody>`;
+
+    // View: total mois
+    $('tabl-prods-total').innerHTML=`
+      <thead><tr>
+        <th style="text-align:left">#</th>
+        <th style="text-align:left">Produit</th>
+        <th>CA mois</th><th>Qté</th><th>Jours</th>
+      </tr></thead>
+      <tbody>${prodList.map((p,i)=>{
+        const qte=dk.reduce((s,ds)=>s+(LD[ds].prods?.[p.name]?.qte||0),0);
+        const jours=dk.filter(ds=>(LD[ds].prods?.[p.name]?.ca||0)>0).length;
+        return`<tr>
+          <td class="mn" style="color:${i<3?'var(--amber)':'var(--muted)'};text-align:left">${i+1}</td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</td>
+          <td class="mn" style="color:var(--blue);font-weight:700">${fmt(p.total)}</td>
+          <td class="mn" style="color:var(--muted)">${qte}</td>
+          <td class="mn" style="color:var(--muted)">${jours}j</td>
+        </tr>`;
+      }).join('')}</tbody>`;
+    $('card-prods-day').style.display='block';
+    setProdView(_prodView);
+  } else {
+    $('card-prods-day').style.display='none';
+  }
 }
 
 // ── RENDER DETAIL ──
