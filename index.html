@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Smoke & Smile · Gestion</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{--bg:#020c1a;--bg2:#0a1628;--bg3:#0f1f35;--b:rgba(56,189,248,.15);--b2:rgba(56,189,248,.3);--blue:#38bdf8;--amber:#f59e0b;--red:#f43f5e;--green:#4ade80;--purple:#a78bfa;--text:#e2e8f0;--muted:#64748b;--dim:#334155;--f:'Syne',sans-serif;--m:'JetBrains Mono',monospace;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f);}
+body{display:flex;flex-direction:column;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+#setup-overlay{position:fixed;inset:0;background:rgba(2,12,26,.97);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
+.setup-box{background:var(--bg3);border:1px solid var(--b2);border-radius:16px;padding:28px;max-width:520px;width:100%;}
+.setup-box h2{font-size:19px;font-weight:800;margin-bottom:6px;}
+.setup-box p{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:18px;}
+.steps{counter-reset:s;}
+.step{counter-increment:s;display:flex;gap:11px;margin-bottom:12px;align-items:flex-start;}
+.step::before{content:counter(s);width:21px;height:21px;border-radius:50%;background:rgba(56,189,248,.12);border:1px solid var(--blue);color:var(--blue);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.step p{font-size:12px;color:var(--muted);line-height:1.5;}
+.step a{color:var(--blue);}
+.setup-ta{width:100%;height:190px;background:var(--bg2);border:1px solid var(--b);border-radius:8px;color:var(--text);font-family:var(--m);font-size:11px;padding:12px;resize:none;outline:none;margin-bottom:14px;}
+.setup-ta:focus{border-color:var(--b2);}
+.btn-p{background:linear-gradient(135deg,var(--blue),#0ea5e9);border:none;border-radius:9px;color:#fff;font-family:var(--f);font-size:13px;font-weight:700;padding:11px 24px;cursor:pointer;width:100%;letter-spacing:.04em;}
+.setup-err{color:var(--red);font-size:11px;margin-bottom:10px;display:none;}
+#prog{position:fixed;top:0;left:0;right:0;height:3px;z-index:300;}
+#pb{height:3px;background:linear-gradient(90deg,var(--blue),#0ea5e9);width:0%;transition:width .3s;}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--bg3);border:1px solid var(--b2);border-radius:10px;padding:10px 20px;font-size:13px;z-index:400;transition:transform .3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,.6);}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#header{position:sticky;top:0;z-index:100;background:rgba(2,12,26,.97);border-bottom:1px solid var(--b);padding:0 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:54px;}
+.logo{display:flex;align-items:center;gap:9px;flex-shrink:0;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),#0ea5e9);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.logo-name{font-weight:800;font-size:14px;letter-spacing:.04em;}
+.logo-sub{font-size:9px;color:var(--muted);letter-spacing:.1em;}
+#sync-ind{font-size:9px;color:var(--muted);display:flex;align-items:center;gap:5px;font-family:var(--m);}
+#sdot{width:7px;height:7px;border-radius:50%;background:var(--dim);transition:background .4s;}
+#sdot.ok{background:var(--green);}
+#sdot.sy{background:var(--amber);animation:pulse .8s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.dz{border:1.5px dashed var(--b2);border-radius:9px;padding:7px 12px;cursor:pointer;background:rgba(15,23,42,.6);transition:all .2s;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.dz:hover,.dz.drag{border-color:var(--blue);background:rgba(56,189,248,.07);}
+.dz-l{font-size:11px;font-weight:600;color:#94a3b8;}
+.dz-s{font-size:9px;color:var(--muted);}
+#tabs{display:flex;gap:0;padding:0 16px;border-bottom:1px solid rgba(56,189,248,.08);overflow-x:auto;background:var(--bg);flex-shrink:0;}
+#tabs::-webkit-scrollbar{height:0;}
+.tab{background:none;border:none;cursor:pointer;font-family:var(--f);font-size:12px;letter-spacing:.04em;color:var(--muted);padding:11px 13px;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:all .2s;}
+.tab:hover{color:var(--blue);}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:700;}
+.badge{background:rgba(56,189,248,.15);color:var(--blue);border-radius:10px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:4px;}
+#content{flex:1;overflow-y:auto;padding:14px 16px;}
+.page{display:none;}.page.active{display:block;}
+.yp{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+.ypb{background:none;border:1.5px solid var(--b);border-radius:20px;color:var(--muted);font-family:var(--f);font-size:11px;font-weight:600;padding:5px 14px;cursor:pointer;transition:all .2s;}
+.ypb:hover{border-color:var(--b2);}
+.card{background:rgba(15,23,42,.9);border:1px solid var(--b);border-radius:12px;padding:16px 18px;margin-bottom:12px;}
+.ct{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--blue);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.ct::before{content:'';display:inline-block;width:3px;height:13px;background:var(--blue);border-radius:2px;}
+.kg{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;}
+@media(min-width:560px){.kg{grid-template-columns:repeat(4,1fr);}}
+.kpi{background:rgba(15,23,42,.9);border:1px solid var(--b);border-radius:12px;padding:13px 15px;}
+.kl{font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;}
+.kv{font-family:var(--m);font-size:17px;font-weight:700;margin-bottom:3px;line-height:1.2;}
+.ks{font-size:10px;color:var(--muted);}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{text-align:right;padding:6px 9px;font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--b);font-weight:600;}
+.tbl th:first-child{text-align:left;}
+.tbl td{padding:8px 9px;text-align:right;border-bottom:1px solid rgba(56,189,248,.05);}
+.tbl td:first-child{text-align:left;}
+.tbl tr:hover td{background:rgba(56,189,248,.04);}
+.cw{position:relative;height:220px;}
+@media(min-width:600px){.cw{height:260px;}}
+.mn{font-family:var(--m);}
+#mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+@media(min-width:480px){#mgrid{grid-template-columns:repeat(4,1fr);}}
+@media(min-width:700px){#mgrid{grid-template-columns:repeat(6,1fr);}}
+.mb{background:rgba(15,23,42,.7);border:1px solid var(--b);border-radius:10px;padding:10px 7px;cursor:pointer;text-align:center;transition:all .2s;}
+.mb:hover{border-color:var(--b2);}
+.mb.has{border-color:rgba(56,189,248,.25);}
+.mb.sel{border-color:var(--blue);background:rgba(56,189,248,.08);}
+.mb.none{opacity:.3;pointer-events:none;}
+.mb .mn2{font-size:11px;font-weight:700;color:var(--text);}
+.mb .mv{font-family:var(--m);font-size:12px;color:var(--blue);margin-top:4px;}
+.mb .mj{font-size:9px;color:var(--muted);margin-top:2px;}
+.cmp-bar{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.15);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.cy1{color:var(--blue);font-weight:700;font-family:var(--m);}
+.cy2{color:var(--amber);font-weight:700;font-family:var(--m);}
+.ii{border:1px solid var(--b);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:11px;}
+.ii .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.ii .it{font-size:12px;font-weight:600;}
+.ii .is{font-size:10px;color:var(--muted);margin-top:2px;}
+.ib{font-size:9px;padding:2px 6px;border-radius:6px;margin-left:6px;font-weight:700;}
+.bd{background:none;border:none;cursor:pointer;color:var(--dim);font-size:14px;margin-left:auto;transition:color .2s;flex-shrink:0;}
+.bd:hover{color:var(--red);}
+#empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;gap:22px;text-align:center;padding:24px;}
+#empty h1{font-size:24px;font-weight:800;letter-spacing:.04em;}
+#empty p{color:var(--muted);font-size:13px;max-width:340px;line-height:1.6;}
+.dbig{border:2px dashed var(--b2);border-radius:14px;padding:28px 34px;cursor:pointer;transition:all .2s;width:100%;max-width:400px;}
+.dbig:hover,.dbig.drag{border-color:var(--blue);background:rgba(56,189,248,.06);}
+.dbig .dbi{font-size:34px;margin-bottom:10px;}
+.dbig .dbt{font-size:13px;font-weight:700;color:#94a3b8;}
+.dbig .dbs{font-size:11px;color:var(--muted);margin-top:4px;}
+</style>
+</head>
+<body>
+<div id="prog"><div id="pb"></div></div>
+<div id="toast"></div>
+
+<div id="setup-overlay">
+  <div class="setup-box">
+    <div style="font-size:26px;margin-bottom:8px">🔥</div>
+    <h2>Configuration Firebase</h2>
+    <p>Pour synchroniser sur tous tes appareils, connecte ta base Firebase gratuite.</p>
+    <div class="steps">
+      <div class="step"><p>Va sur <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong>Créer un projet</strong> → nomme-le <strong>smoke-smile</strong></p></div>
+      <div class="step"><p><strong>Firestore Database</strong> → Créer une base → Mode <strong>Production</strong> → Région <strong>europe-west3 (Frankfurt)</strong></p></div>
+      <div class="step"><p><strong>Règles</strong> Firestore → remplace tout par : <code style="background:var(--bg2);padding:2px 6px;border-radius:4px;font-size:10px">rules_version='2'; service cloud.firestore { match /databases/{database}/documents { match /{document=**} { allow read, write: if true; } } }</code> → Publier</p></div>
+      <div class="step"><p>⚙️ Paramètres du projet → <strong>Tes applications</strong> → Ajouter une appli Web → Copie et colle l'objet <strong>firebaseConfig</strong> ci-dessous</p></div>
+    </div>
+    <div class="setup-err" id="serr"></div>
+    <textarea class="setup-ta" id="sinput" placeholder='Colle ici ton firebaseConfig :
+
+const firebaseConfig = {
+  apiKey: "AIza...",
+  authDomain: "smoke-smile.firebaseapp.com",
+  projectId: "smoke-smile",
+  storageBucket: "smoke-smile.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123..."
+};'></textarea>
+    <button class="btn-p" onclick="initFB()">Connecter Firebase →</button>
+    <p style="text-align:center;font-size:10px;color:var(--dim);margin-top:10px">Config sauvegardée localement sur cet appareil</p>
+  </div>
+</div>
+
+<div id="empty" style="display:none">
+  <div style="font-size:48px">💨</div>
+  <h1>SMOKE & SMILE</h1>
+  <p>Importe ton premier fichier <strong style="color:var(--blue)">Top_Caisse_Analyse</strong> pour démarrer le suivi annuel.</p>
+  <div class="dbig" id="edrop"><div class="dbi">📂</div><div class="dbt">Glisse ton fichier ici</div><div class="dbs">.xlsx exporté depuis ta caisse · ou clique</div></div>
+  <input type="file" id="fi0" accept=".xlsx,.xls" style="display:none"/>
+</div>
+
+<div id="app" style="display:none;flex-direction:column;height:100%;">
+  <div id="header">
+    <div class="logo">
+      <div class="logo-icon">💨</div>
+      <div><div class="logo-name">SMOKE & SMILE</div><div class="logo-sub">GESTION · NARBONNE</div></div>
+    </div>
+    <div id="sync-ind"><div id="sdot"></div><span id="stxt">—</span></div>
+    <div class="dz" id="dz" style="margin-left:auto"><span style="font-size:17px">📂</span><div><div class="dz-l">Importer</div><div class="dz-s">.xlsx · sync cloud</div></div></div>
+    <input type="file" id="fi1" accept=".xlsx,.xls" style="display:none"/>
+  </div>
+  <div id="tabs">
+    <button class="tab active" data-page="annual">Annuel</button>
+    <button class="tab" data-page="compare">Comparaison</button>
+    <button class="tab" data-page="monthly">Mensuel</button>
+    <button class="tab" data-page="detail">Produits & Clients</button>
+    <button class="tab" data-page="imports">Imports <span class="badge" id="ibadge">0</span></button>
+  </div>
+  <div id="content">
+
+    <div class="page active" id="page-annual">
+      <div class="yp" id="ay"></div>
+      <div class="kg" id="akpis"></div>
+      <div class="card"><div class="ct">CA mensuel — <span id="lany"></span></div><div class="cw"><canvas id="can-a"></canvas></div></div>
+      <div class="card"><div class="ct">Répartition paiements</div><div class="cw" style="height:170px"><canvas id="can-p"></canvas></div></div>
+      <div class="card"><div class="ct">Récap mensuel</div><div style="overflow-x:auto"><table class="tbl" id="tabl-a"></table></div></div>
+    </div>
+
+    <div class="page" id="page-compare">
+      <div class="cmp-bar" id="cmpbar"></div>
+      <div class="kg" id="ckpis"></div>
+      <div class="card"><div class="ct">CA mensuel — comparaison</div><div class="cw"><canvas id="can-c"></canvas></div></div>
+      <div class="card"><div class="ct">Évolution % mois par mois</div><div class="cw" style="height:180px"><canvas id="can-cl"></canvas></div></div>
+      <div class="card"><div class="ct">Tableau comparatif</div><div style="overflow-x:auto"><table class="tbl" id="tabl-c"></table></div></div>
+    </div>
+
+    <div class="page" id="page-monthly">
+      <div class="yp" id="my"></div>
+      <div id="mgrid"></div>
+      <div id="mdet" style="display:none">
+        <div class="kg" id="mkpis"></div>
+        <div class="card"><div class="ct">CA par jour — <span id="lmon"></span></div><div class="cw"><canvas id="can-m"></canvas></div></div>
+        <div class="card"><div class="ct">Top catégories</div><div class="cw" style="height:200px"><canvas id="can-cat"></canvas></div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-detail">
+      <div class="yp" id="dy"></div>
+      <div class="card"><div class="ct">Top produits</div><div style="overflow-x:auto"><table class="tbl" id="tabl-p"></table></div></div>
+      <div class="card"><div class="ct">Top clients</div><div style="overflow-x:auto"><table class="tbl" id="tabl-cl"></table></div></div>
+    </div>
+
+    <div class="page" id="page-imports">
+      <div class="card" style="margin-bottom:12px">
+        <div class="ct">Logique de fusion intelligente</div>
+        <p style="font-size:12px;color:var(--muted);line-height:1.7">
+          Chaque import est <strong style="color:var(--text)">fusionné par date</strong> dans la base cloud.<br>
+          ✅ Date existante → <strong style="color:var(--amber)">mise à jour</strong> avec les nouvelles valeurs.<br>
+          ✅ Date absente du fichier → <strong style="color:var(--text)">conservée</strong> intacte.<br>
+          ✅ Import 01/05→31/05 après 01/05→10/05 → tout mai est correct, les autres mois restent intacts.
+        </p>
+      </div>
+      <div class="card"><div class="ct">Historique des imports</div><div id="ilist"></div></div>
+      <div style="text-align:center;margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button onclick="reconfig()" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);color:var(--blue);padding:9px 18px;border-radius:9px;font-family:var(--f);font-size:12px;cursor:pointer;">⚙️ Reconfigurer Firebase</button>
+        <button onclick="resetAll()" style="background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.3);color:var(--red);padding:9px 18px;border-radius:9px;font-family:var(--f);font-size:12px;cursor:pointer;">🗑 Effacer toutes les données</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const fmt=n=>(+n||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const fmtS=n=>(+n||0).toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})+' €';
+const pct=(a,b)=>b?((a/b)*100).toFixed(1)+'%':'—';
+const dif=(a,b)=>b?(((a-b)/b)*100).toFixed(1):null;
+const MO=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const MS=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const YC=['var(--blue)','var(--amber)','var(--green)','var(--purple)'];
+const YCR=['rgba(56,189,248,.75)','rgba(245,158,11,.75)','rgba(74,222,128,.75)','rgba(167,139,250,.75)'];
+const CCL=['rgba(56,189,248,.8)','rgba(245,158,11,.7)','rgba(74,222,128,.7)','rgba(167,139,250,.7)','rgba(244,63,94,.7)','rgba(45,212,191,.7)','rgba(56,189,248,.4)','rgba(245,158,11,.4)'];
+const GRID='rgba(56,189,248,.05)';
+const TICK={color:'#64748b',font:{size:10}};
+const TICKM={color:'#64748b',font:{family:"'JetBrains Mono',monospace",size:10}};
+const TIP={backgroundColor:'#0f172a',borderColor:'#1e3a5f',borderWidth:1,titleColor:'#94a3b8',bodyColor:'#e2e8f0',bodyFont:{family:"'JetBrains Mono',monospace",size:11},callbacks:{label:ctx=>` ${fmtS(ctx.raw)}`}};
+
+function parseExcelDate(v){
+  if(!v) return null;
+  if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);if(!d)return null;return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;}
+  const s=String(v).trim();
+  let m=s.match(/^(\d{2})\/(\d{2})\/(\d{2,4})/);
+  if(m){const y=m[3].length===2?'20'+m[3]:m[3];return `${y}-${m[2]}-${m[1]}`;}
+  if(s.match(/^\d{4}-\d{2}-\d{2}/)) return s.slice(0,10);
+  return null;
+}
+
+let _tt;
+function toast(msg,col='var(--blue)'){clearTimeout(_tt);const t=$('toast');t.textContent=msg;t.style.borderColor=col;t.classList.add('show');_tt=setTimeout(()=>t.classList.remove('show'),3000);}
+function prog(p){$('pb').style.width=p+'%';if(p>=100)setTimeout(()=>prog(0),600);}
+function sync(state,txt){$('sdot').className=state==='ok'?'ok':state==='sy'?'sy':'';$('stxt').textContent=txt;}
+
+// ── FIREBASE ──
+let db=null;
+const LC='ss_fb_cfg';
+
+function extractCfg(raw){
+  const s=raw.trim().replace(/^[\s\S]*?({)/,'$1').replace(/(})[\s\S]*$/,'$1');
+  return JSON.parse(s);
+}
+
+async function initFB(){
+  const raw=$('sinput').value.trim();
+  if(!raw){showErr('Colle ta configuration Firebase.');return;}
+  let cfg;
+  try{cfg=extractCfg(raw);}catch(e){showErr('Format invalide. Copie l\'objet {apiKey:…} complet.');return;}
+  if(!cfg.apiKey||!cfg.projectId){showErr('apiKey ou projectId manquant.');return;}
+  try{
+    if(firebase.apps.length)await firebase.app().delete();
+    firebase.initializeApp(cfg);
+    db=firebase.firestore();
+    await db.collection('_ping').doc('t').set({t:Date.now()});
+    localStorage.setItem(LC,JSON.stringify(cfg));
+    $('setup-overlay').style.display='none';
+    sync('ok','Connecté');
+    toast('✓ Firebase connecté !','var(--green)');
+    await loadRender();
+  }catch(e){showErr('Erreur connexion : '+e.message);}
+}
+function showErr(m){$('serr').textContent=m;$('serr').style.display='block';}
+function reconfig(){$('setup-overlay').style.display='flex';}
+
+async function autoConnect(){
+  const s=localStorage.getItem(LC);
+  if(!s)return false;
+  try{
+    const cfg=JSON.parse(s);
+    if(firebase.apps.length)await firebase.app().delete();
+    firebase.initializeApp(cfg);
+    db=firebase.firestore();
+    $('setup-overlay').style.display='none';
+    sync('sy','Chargement…');
+    return true;
+  }catch{return false;}
+}
+
+// ── DATA LAYER ──
+let LD={};// local days cache
+
+async function fetchDays(){
+  sync('sy','Chargement…');
+  const snap=await db.collection('days').get();
+  LD={};snap.forEach(d=>{LD[d.id]=d.data();});
+  sync('ok','Synchronisé');
+  return LD;
+}
+
+async function saveBatch(upd){
+  const keys=Object.keys(upd),SZ=450;
+  for(let i=0;i<keys.length;i+=SZ){
+    const b=db.batch();
+    keys.slice(i,i+SZ).forEach(ds=>b.set(db.collection('days').doc(ds),upd[ds],{merge:true}));
+    await b.commit();
+  }
+}
+
+async function fetchImports(){
+  const snap=await db.collection('imports').orderBy('ts','desc').limit(50).get();
+  const a=[];snap.forEach(d=>a.push({id:d.id,...d.data()}));return a;
+}
+
+async function saveImport(e){await db.collection('imports').add({...e,ts:firebase.firestore.FieldValue.serverTimestamp()});}
+async function delImportDoc(id){await db.collection('imports').doc(id).delete();}
+
+// ── PARSE + MERGE ──
+async function parseAndMerge(wb,fileName){
+  prog(20);
+  const inc={};
+  const shS=wb.Sheets['Synthèse'];
+  if(shS){
+    const rows=XLSX.utils.sheet_to_json(shS,{defval:0});
+    for(const r of rows){
+      const ds=parseExcelDate(r['Date']);
+      if(!ds||String(r['Date']).toUpperCase()==='TOTAL')continue;
+      inc[ds]={ca:+(r['CA']||r['Produits']||0),cb:+(r['CB']||0),esp:+(r['Especes']||r['Espèces']||0),cats:{},prods:{},clients:{},nbTx:0};
+    }
+  }
+  const shV=wb.Sheets['Ventes'];
+  if(shV){
+    const rows=XLSX.utils.sheet_to_json(shV,{defval:''});
+    const tx={};
+    for(const r of rows){
+      const ds=parseExcelDate(r['Date']);
+      if(!ds||String(r['Date']).toUpperCase()==='TOTAL')continue;
+      if(!inc[ds])inc[ds]={ca:0,cb:0,esp:0,cats:{},prods:{},clients:{},nbTx:0};
+      const cat=String(r['Catégorie']||r['Catégorie']||'').trim()||'Autre';
+      const lib=String(r['Libellé']||r['Libellé']||'').trim();
+      const cli=String(r['Client']||'').trim();
+      const ttc=+(r['Montant TTC']||0);
+      const qty=+(r['Quantité']||r['Quantité']||0);
+      const vte=+(r['Vente']||0);
+      if(lib){
+        inc[ds].cats[cat]=(inc[ds].cats[cat]||0)+ttc;
+        if(!inc[ds].prods[lib])inc[ds].prods[lib]={ca:0,qte:0};
+        inc[ds].prods[lib].ca+=ttc;inc[ds].prods[lib].qte+=qty;
+      }
+      if(cli&&cli!=='De passage'&&cli!=='Client')inc[ds].clients[cli]=(inc[ds].clients[cli]||0)+ttc;
+      if(vte){if(!tx[ds])tx[ds]=new Set();tx[ds].add(vte);}
+    }
+    for(const ds of Object.keys(tx))if(inc[ds])inc[ds].nbTx=tx[ds].size;
+  }
+  prog(55);
+  const dates=Object.keys(inc).sort();
+  let nD=0,uD=0;
+  for(const ds of dates){
+    const ex=LD[ds];
+    const m={
+      ca:inc[ds].ca||ex?.ca||0,cb:inc[ds].cb||ex?.cb||0,esp:inc[ds].esp||ex?.esp||0,
+      nbTx:inc[ds].nbTx||ex?.nbTx||0,
+      cats:{...(ex?.cats||{}),...inc[ds].cats},
+      clients:{...(ex?.clients||{}),...inc[ds].clients},
+      prods:{...(ex?.prods||{}),...inc[ds].prods},
+    };
+    if(ex)uD++;else nD++;
+    LD[ds]=m;
+  }
+  prog(70);
+  sync('sy','Sauvegarde cloud…');
+  const toSave={};dates.forEach(ds=>toSave[ds]=LD[ds]);
+  await saveBatch(toSave);
+  const fd=dates[0],ld=dates[dates.length-1];
+  const fD=ds=>`${ds.slice(8)}/${ds.slice(5,7)}/${ds.slice(2,4)}`;
+  const per=fd&&ld?fD(fd)+' → '+fD(ld):'—';
+  await saveImport({file:fileName,periode:per,newDates:nD,updDates:uD,nbDates:dates.length,date:new Date().toISOString()});
+  prog(100);sync('ok','Synchronisé');
+  return{nD,uD,per};
+}
+
+// ── AGGREGATION ──
+function byMonth(days){
+  const m={};
+  for(const[ds,d]of Object.entries(days)){
+    const mk=ds.slice(0,7);
+    if(!m[mk])m[mk]={ca:0,cb:0,esp:0,nbTx:0,nbDays:0,cats:{},prods:{},clients:{}};
+    m[mk].ca+=d.ca||0;m[mk].cb+=d.cb||0;m[mk].esp+=d.esp||0;m[mk].nbTx+=d.nbTx||0;m[mk].nbDays++;
+    for(const[k,v]of Object.entries(d.cats||{}))m[mk].cats[k]=(m[mk].cats[k]||0)+v;
+    for(const[k,v]of Object.entries(d.prods||{})){if(!m[mk].prods[k])m[mk].prods[k]={ca:0,qte:0};m[mk].prods[k].ca+=v.ca||0;m[mk].prods[k].qte+=v.qte||0;}
+    for(const[k,v]of Object.entries(d.clients||{}))m[mk].clients[k]=(m[mk].clients[k]||0)+v;
+  }
+  return m;
+}
+function byYear(months){
+  const y={};
+  for(const[mk,m]of Object.entries(months)){
+    const yr=mk.slice(0,4);
+    if(!y[yr])y[yr]={ca:0,cb:0,esp:0,nbTx:0,nbDays:0};
+    y[yr].ca+=m.ca;y[yr].cb+=m.cb;y[yr].esp+=m.esp;y[yr].nbTx+=m.nbTx;y[yr].nbDays+=m.nbDays;
+  }
+  return y;
+}
+function getYears(months){return[...new Set(Object.keys(months).map(mk=>mk.slice(0,4)))].sort();}
+
+// ── CHARTS ──
+const CH={};
+function dc(id){if(CH[id]){CH[id].destroy();delete CH[id];}}
+
+// ── STATE ──
+let sAY=null,sMY=null,sMon=null,sDY=null,cY1=null,cY2=null;
+
+// ── RENDER ANNUAL ──
+function renderAnnual(){
+  const M=byMonth(LD),years=getYears(M);
+  if(!years.length)return;
+  if(!sAY||!years.includes(sAY))sAY=years[years.length-1];
+  $('ay').innerHTML=years.map((y,i)=>`<button class="ypb${y===sAY?' active':''}" style="${y===sAY?`border-color:${YC[i]};color:${YC[i]};background:${YCR[i].replace('.75','.1')}`:`color:${YC[i]};border-color:${YCR[i]}`}" onclick="sAYear('${y}')">${y}</button>`).join('');
+  const yr=sAY,YD=byYear(M),tot=YD[yr]||{ca:0,cb:0,esp:0,nbDays:0};
+  $('lany').textContent=yr;
+  const prev=YD[String(+yr-1)],d1=dif(tot.ca,prev?.ca);
+  $('akpis').innerHTML=[
+    {l:'CA Total '+yr,v:fmt(tot.ca),s:prev?`Préc. : ${fmtS(prev.ca)}`:tot.nbDays+' jours',c:YC[years.indexOf(yr)]||YC[0],b:d1},
+    {l:'CA Moyen/Jour', v:fmtS(tot.nbDays?tot.ca/tot.nbDays:0),s:'jours ouverts',c:'var(--amber)'},
+    {l:'CB',v:pct(tot.cb,tot.ca),s:fmt(tot.cb),c:'var(--blue)'},
+    {l:'Espèces',v:pct(tot.esp,tot.ca),s:fmt(tot.esp),c:'var(--purple)'},
+  ].map(k=>`<div class="kpi"><div class="kl">${k.l}</div><div class="kv" style="color:${k.c}">${k.v}${k.b!=null?`<span style="font-size:11px;margin-left:5px;color:${+k.b>=0?'var(--green)':'var(--red)'}">${+k.b>=0?'▲':'▼'}${Math.abs(k.b)}%</span>`:''}</div><div class="ks">${k.s}</div></div>`).join('');
+  const k12=Array.from({length:12},(_,i)=>`${yr}-${String(i+1).padStart(2,'0')}`);
+  const yM=Object.fromEntries(Object.entries(M).filter(([mk])=>mk.startsWith(yr)));
+  dc('a');
+  CH['a']=new Chart($('can-a').getContext('2d'),{type:'bar',data:{labels:MS,datasets:[
+    {label:'CB',data:k12.map(mk=>yM[mk]?.cb||0),backgroundColor:'rgba(56,189,248,.8)',borderRadius:4,stack:'a'},
+    {label:'Espèces',data:k12.map(mk=>yM[mk]?.esp||0),backgroundColor:'rgba(245,158,11,.7)',borderRadius:4,stack:'a'},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true,pointStyleWidth:8}},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:TICK,stacked:true},y:{grid:{color:GRID},ticks:{...TICKM,callback:v=>v+'€'},stacked:true}}}});
+  dc('p');
+  CH['p']=new Chart($('can-p').getContext('2d'),{type:'doughnut',data:{labels:['CB','Espèces'],datasets:[{data:[tot.cb,tot.esp],backgroundColor:['rgba(56,189,248,.8)','rgba(245,158,11,.7)'],borderColor:'transparent',borderRadius:4}]},options:{cutout:'65%',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:'#94a3b8',font:{size:11},usePointStyle:true}},tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.raw)}`}}}}});
+  $('tabl-a').innerHTML=`<thead><tr><th style="text-align:left">Mois</th><th>CA</th><th>Jours</th><th>CA/Jour</th><th>% CB</th><th>% Esp.</th></tr></thead><tbody>${k12.map((mk,i)=>{const m=yM[mk];if(!m)return`<tr style="opacity:.25"><td>${MO[i]}</td><td class="mn" colspan="5">—</td></tr>`;return`<tr><td style="font-weight:600">${MO[i]}</td><td class="mn" style="color:var(--blue);font-weight:700">${fmt(m.ca)}</td><td class="mn" style="color:var(--muted)">${m.nbDays}</td><td class="mn" style="color:var(--muted)">${fmtS(m.nbDays?m.ca/m.nbDays:0)}</td><td class="mn" style="color:var(--blue);font-size:11px">${pct(m.cb,m.ca)}</td><td class="mn" style="color:var(--amber);font-size:11px">${pct(m.esp,m.ca)}</td></tr>`;}).join('')}</tbody><tfoot><tr style="border-top:1px solid var(--b2)"><td style="font-weight:700">TOTAL</td><td class="mn" style="color:var(--green);font-weight:700">${fmt(tot.ca)}</td><td class="mn" style="color:var(--muted)">${tot.nbDays}</td><td class="mn" style="color:var(--muted)">${fmtS(tot.nbDays?tot.ca/tot.nbDays:0)}</td><td class="mn" style="color:var(--blue)">${pct(tot.cb,tot.ca)}</td><td class="mn" style="color:var(--amber)">${pct(tot.esp,tot.ca)}</td></tr></tfoot>`;
+}
+window.sAYear=y=>{sAY=y;renderAnnual();};
+
+// ── RENDER COMPARISON ──
+function renderComparison(){
+  const M=byMonth(LD),years=getYears(M);
+  if(years.length<2){
+    $('page-compare').innerHTML='<div style="text-align:center;padding:48px;color:var(--muted);font-size:13px"><div style="font-size:40px;margin-bottom:14px">📊</div>Importe des données sur <strong style="color:var(--text)">au moins 2 années</strong> pour voir la comparaison annuelle.</div>';
+    return;
+  }
+  if(!cY1)cY1=years[years.length-2];
+  if(!cY2)cY2=years[years.length-1];
+  if(cY1===cY2){cY1=years.find(y=>y!==cY2)||years[0];}
+  const y1=cY1,y2=cY2,YD=byYear(M),d1=YD[y1]||{ca:0,cb:0,esp:0,nbDays:0},d2=YD[y2]||{ca:0,cb:0,esp:0,nbDays:0};
+  const ev=dif(d2.ca,d1.ca);
+  const btnStyle=y=>`border:1px solid ${y===y1?'var(--blue)':y===y2?'var(--amber)':'var(--b)'};background:none;color:${y===y1?'var(--blue)':y===y2?'var(--amber)':'var(--muted)'};padding:3px 10px;border-radius:16px;font-family:var(--f);font-size:11px;cursor:pointer`;
+  $('cmpbar').innerHTML=`Comparaison <span class="cy1">${y1}</span> vs <span class="cy2">${y2}</span><span style="margin-left:auto;font-size:10px">Changer :</span>${years.map(y=>`<button onclick="sCmpY('${y}')" style="${btnStyle(y)}">${y}</button>`).join('')}`;
+  const evm=dif(d2.nbDays?d2.ca/d2.nbDays:0,d1.nbDays?d1.ca/d1.nbDays:0);
+  $('ckpis').innerHTML=[
+    {l:`CA ${y2}`,v:fmt(d2.ca),s:`${y1} : ${fmtS(d1.ca)}`,c:'var(--amber)',b:ev},
+    {l:`CA ${y1}`,v:fmt(d1.ca),s:d1.nbDays+' jours',c:'var(--blue)'},
+    {l:'Évolution CA',v:ev!=null?(+ev>=0?'▲ +':' ▼ ')+Math.abs(ev)+'%':'—',s:`${y1} → ${y2}`,c:ev!=null&&+ev>=0?'var(--green)':'var(--red)'},
+    {l:'CA/Jour évol.',v:evm!=null?(+evm>=0?'▲ +':' ▼ ')+Math.abs(evm)+'%':'—',s:`${fmtS(d1.nbDays?d1.ca/d1.nbDays:0)} → ${fmtS(d2.nbDays?d2.ca/d2.nbDays:0)}`,c:evm!=null&&+evm>=0?'var(--green)':'var(--red)'},
+  ].map(k=>`<div class="kpi"><div class="kl">${k.l}</div><div class="kv" style="color:${k.c}">${k.v}${k.b!=null?`<span style="font-size:11px;margin-left:5px;color:${+k.b>=0?'var(--green)':'var(--red)'}">${+k.b>=0?'▲':'▼'}${Math.abs(k.b)}%</span>`:''}</div><div class="ks">${k.s}</div></div>`).join('');
+  const k1=Array.from({length:12},(_,i)=>`${y1}-${String(i+1).padStart(2,'0')}`);
+  const k2=Array.from({length:12},(_,i)=>`${y2}-${String(i+1).padStart(2,'0')}`);
+  const v1=k1.map(mk=>M[mk]?.ca||0),v2=k2.map(mk=>M[mk]?.ca||0);
+  dc('c');
+  CH['c']=new Chart($('can-c').getContext('2d'),{type:'bar',data:{labels:MS,datasets:[
+    {label:y1,data:v1,backgroundColor:'rgba(56,189,248,.7)',borderRadius:[4,4,0,0]},
+    {label:y2,data:v2,backgroundColor:'rgba(245,158,11,.7)',borderRadius:[4,4,0,0]},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true,pointStyleWidth:8}},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:{...TICKM,callback:v=>v+'€'}}}}});
+  const evLine=v1.map((a,i)=>v2[i]&&a?+dif(v2[i],a):null);
+  dc('cl');
+  CH['cl']=new Chart($('can-cl').getContext('2d'),{type:'line',data:{labels:MS,datasets:[{label:`Évolution % (${y1}→${y2})`,data:evLine,borderColor:'var(--green)',backgroundColor:'rgba(74,222,128,.1)',pointBackgroundColor:evLine.map(v=>v===null?'transparent':+v>=0?'var(--green)':'var(--red)'),pointRadius:5,tension:.3,fill:true,spanGaps:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:ctx=>ctx.raw!=null?` ${ctx.raw>=0?'+':''}${ctx.raw}%`:' —'}}},scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:{...TICKM,callback:v=>v+'%'},afterDataLimits:ax=>{const ex=Math.max(10,Math.abs(ax.max||0),Math.abs(ax.min||0));ax.max=ex;ax.min=-ex;}}}}});
+  const totCol=ev!=null&&+ev>=0?'var(--green)':'var(--red)';
+  $('tabl-c').innerHTML=`<thead><tr><th style="text-align:left">Mois</th><th>CA ${y1}</th><th>CA ${y2}</th><th>Évol.</th><th>CB% ${y1}</th><th>CB% ${y2}</th></tr></thead><tbody>${Array.from({length:12},(_,i)=>{const m1=M[k1[i]],m2=M[k2[i]],e=m1&&m2?dif(m2.ca,m1.ca):null,col=e==null?'var(--muted)':+e>=0?'var(--green)':'var(--red)';return`<tr><td style="font-weight:600">${MO[i]}</td><td class="mn" style="color:var(--blue)">${m1?fmtS(m1.ca):'—'}</td><td class="mn" style="color:var(--amber)">${m2?fmtS(m2.ca):'—'}</td><td class="mn" style="color:${col};font-weight:700">${e!=null?(+e>=0?'▲ +':' ▼ ')+Math.abs(e)+'%':'—'}</td><td class="mn" style="color:var(--blue);font-size:11px">${m1?pct(m1.cb,m1.ca):'—'}</td><td class="mn" style="color:var(--amber);font-size:11px">${m2?pct(m2.cb,m2.ca):'—'}</td></tr>`;}).join('')}</tbody><tfoot><tr style="border-top:1px solid var(--b2)"><td style="font-weight:700">TOTAL</td><td class="mn" style="color:var(--blue);font-weight:700">${fmt(d1.ca)}</td><td class="mn" style="color:var(--amber);font-weight:700">${fmt(d2.ca)}</td><td class="mn" style="color:${totCol};font-weight:700">${ev!=null?(+ev>=0?'▲ +':' ▼ ')+Math.abs(ev)+'%':'—'}</td><td class="mn" style="color:var(--blue)">${pct(d1.cb,d1.ca)}</td><td class="mn" style="color:var(--amber)">${pct(d2.cb,d2.ca)}</td></tr></tfoot>`;
+}
+window.sCmpY=function(y){if(cY1===y)cY2=getYears(byMonth(LD)).find(x=>x!==y)||y;else if(cY2===y)cY1=y;else cY2=y;renderComparison();};
+
+// ── RENDER MONTHLY ──
+function renderMonthly(){
+  const M=byMonth(LD),years=getYears(M);
+  if(!years.length)return;
+  if(!sMY||!years.includes(sMY))sMY=years[years.length-1];
+  $('my').innerHTML=years.map((y,i)=>`<button class="ypb${y===sMY?' active':''}" style="${y===sMY?`border-color:${YC[i]};color:${YC[i]}`:''}" onclick="sMYear('${y}')">${y}</button>`).join('');
+  const yr=sMY;
+  $('mgrid').innerHTML=Array.from({length:12},(_,i)=>{
+    const mk=`${yr}-${String(i+1).padStart(2,'0')}`,m=M[mk],isSel=mk===sMon;
+    const cls=m?`mb has${isSel?' sel':''}`:'mb none';
+    return`<div class="${cls}"${m?` onclick="sMon('${mk}')"`:''}><div class="mn2">${MS[i]}</div>${m?`<div class="mv">${fmtS(m.ca)}</div><div class="mj">${m.nbDays}j</div>`:`<div class="mv" style="font-size:9px;color:var(--dim)">—</div>`}</div>`;
+  }).join('');
+  if(sMon&&M[sMon]&&sMon.startsWith(yr)){renderMonthDet(sMon,M);}
+  else $('mdet').style.display='none';
+}
+window.sMYear=y=>{sMY=y;sMon=null;renderMonthly();};
+window.sMon=mk=>{sMon=mk;renderMonthly();};
+
+function renderMonthDet(mk,M){
+  const m=M[mk];
+  $('mdet').style.display='block';
+  const[yr,mo]=mk.split('-');
+  $('lmon').textContent=MO[+mo-1]+' '+yr;
+  $('mkpis').innerHTML=[
+    {l:'CA du mois',v:fmt(m.ca),s:`${m.nbDays} jours`,c:'var(--blue)'},
+    {l:'CA Moyen/Jour',v:fmtS(m.nbDays?m.ca/m.nbDays:0),s:'',c:'var(--amber)'},
+    {l:'CB',v:pct(m.cb,m.ca),s:fmt(m.cb),c:'var(--blue)'},
+    {l:'Espèces',v:pct(m.esp,m.ca),s:fmt(m.esp),c:'var(--purple)'},
+  ].map(k=>`<div class="kpi"><div class="kl">${k.l}</div><div class="kv" style="color:${k.c}">${k.v}</div><div class="ks">${k.s}</div></div>`).join('');
+  const dk=Object.keys(LD).filter(ds=>ds.startsWith(mk)).sort();
+  dc('m');CH['m']=new Chart($('can-m').getContext('2d'),{type:'bar',data:{labels:dk.map(ds=>ds.slice(8)),datasets:[{label:'CA',data:dk.map(ds=>LD[ds].ca||0),backgroundColor:'rgba(56,189,248,.75)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:{...TICKM,callback:v=>v+'€'}}}}});
+  const cats=Object.entries(m.cats).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  dc('cat');CH['cat']=new Chart($('can-cat').getContext('2d'),{type:'bar',data:{labels:cats.map(c=>c[0].length>15?c[0].slice(0,14)+'…':c[0]),datasets:[{data:cats.map(c=>c[1]),backgroundColor:CCL,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:{...TICKM,callback:v=>v+'€'}},y:{grid:{display:false},ticks:TICK}}}});
+}
+
+// ── RENDER DETAIL ──
+function renderDetail(){
+  const M=byMonth(LD),years=getYears(M);
+  if(!years.length)return;
+  if(!sDY)sDY='all';
+  $('dy').innerHTML=`<button class="ypb${sDY==='all'?' active':''}" onclick="sDYear('all')">Toutes</button>`+years.map((y,i)=>`<button class="ypb${y===sDY?' active':''}" style="${y===sDY?`border-color:${YC[i]};color:${YC[i]}`:''}" onclick="sDYear('${y}')">${y}</button>`).join('');
+  const fd=sDY==='all'?LD:Object.fromEntries(Object.entries(LD).filter(([ds])=>ds.startsWith(sDY)));
+  const all=Object.values(fd).reduce((acc,d)=>{
+    for(const[k,v]of Object.entries(d.prods||{})){if(!acc.p[k])acc.p[k]={ca:0,qte:0};acc.p[k].ca+=v.ca||0;acc.p[k].qte+=v.qte||0;}
+    for(const[k,v]of Object.entries(d.clients||{}))acc.c[k]=(acc.c[k]||0)+v;
+    return acc;
+  },{p:{},c:{}});
+  const prods=Object.entries(all.p).sort((a,b)=>b[1].ca-a[1].ca).slice(0,15);
+  $('tabl-p').innerHTML=`<thead><tr><th style="text-align:left">#</th><th style="text-align:left">Produit</th><th>CA</th><th>Qté</th></tr></thead><tbody>${prods.map(([n,v],i)=>`<tr><td class="mn" style="color:${i<3?'var(--amber)':'var(--muted)'};text-align:left">${i+1}</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n}</td><td class="mn" style="color:var(--blue)">${fmtS(v.ca)}</td><td class="mn" style="color:var(--muted)">${v.qte}</td></tr>`).join('')}</tbody>`;
+  const clients=Object.entries(all.c).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  $('tabl-cl').innerHTML=`<thead><tr><th style="text-align:left">#</th><th style="text-align:left">Client</th><th>CA</th></tr></thead><tbody>${clients.map(([n,v],i)=>`<tr><td class="mn" style="color:${i<3?'var(--amber)':'var(--muted)'};text-align:left">${i+1}</td><td>${n}</td><td class="mn" style="color:var(--blue)">${fmt(v)}</td></tr>`).join('')}</tbody>`;
+}
+window.sDYear=y=>{sDY=y;renderDetail();};
+
+// ── RENDER IMPORTS ──
+async function renderImports(){
+  const imps=await fetchImports();
+  $('ibadge').textContent=imps.length;
+  const DC=['var(--blue)','var(--amber)','var(--green)','var(--purple)','var(--red)'];
+  if(!imps.length){$('ilist').innerHTML='<p style="color:var(--muted);font-size:12px">Aucun import enregistré.</p>';return;}
+  $('ilist').innerHTML=imps.map((imp,i)=>`<div class="ii"><div class="dot" style="background:${DC[i%5]}"></div><div style="flex:1;min-width:0"><div class="it">${imp.periode||'—'}<span class="ib" style="background:rgba(74,222,128,.12);color:var(--green)">+${imp.newDates||0}</span><span class="ib" style="background:rgba(245,158,11,.12);color:var(--amber)">↻${imp.updDates||0}</span></div><div class="is">${imp.file||'—'} · ${imp.date?new Date(imp.date).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):''}</div></div><button class="bd" onclick="dImp('${imp.id}')">🗑</button></div>`).join('');
+}
+window.dImp=async id=>{await delImportDoc(id);renderImports();toast('Import supprimé');};
+
+// ── MASTER RENDER ──
+function renderAll(){
+  const has=Object.keys(LD).length>0;
+  $('empty').style.display=has?'none':'flex';
+  $('app').style.display=has?'flex':'none';
+  if(has){renderAnnual();renderComparison();renderMonthly();renderDetail();renderImports();}
+}
+async function loadRender(){await fetchDays();renderAll();}
+
+// ── RESET ──
+async function resetAll(){
+  if(!confirm('Effacer TOUTES les données Firestore ?'))return;
+  sync('sy','Suppression…');
+  const s1=await db.collection('days').get();const b1=db.batch();s1.forEach(d=>b1.delete(d.ref));await b1.commit();
+  const s2=await db.collection('imports').get();const b2=db.batch();s2.forEach(d=>b2.delete(d.ref));await b2.commit();
+  LD={};Object.keys(CH).forEach(k=>{CH[k].destroy();delete CH[k];});
+  sync('ok','Connecté');renderAll();toast('Données effacées','var(--red)');
+}
+
+// ── FILE HANDLING ──
+async function handleFile(f){
+  if(!f||!db){toast('Firebase non connecté','var(--red)');return;}
+  prog(10);
+  const r=new FileReader();
+  r.onload=async e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:false});
+      const{nD,uD,per}=await parseAndMerge(wb,f.name);
+      renderAll();
+      toast(`✓ ${per} · +${nD} dates, ↻ ${uD} mises à jour`,'var(--green)');
+    }catch(err){prog(0);toast('❌ '+err.message,'var(--red)');console.error(err);}
+  };
+  r.readAsArrayBuffer(f);
+}
+
+function setupDrop(zone,input){
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag');handleFile(e.dataTransfer.files[0]);});
+  zone.addEventListener('click',()=>input.click());
+  input.addEventListener('change',e=>{handleFile(e.target.files[0]);e.target.value='';});
+}
+
+// ── TABS ──
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    $('page-'+btn.dataset.page).classList.add('active');
+    const p=btn.dataset.page;
+    if(p==='annual')renderAnnual();
+    if(p==='compare')renderComparison();
+    if(p==='monthly')renderMonthly();
+    if(p==='detail')renderDetail();
+    if(p==='imports')renderImports();
+  });
+});
+
+// ── BOOT ──
+setupDrop($('dz'),$('fi1'));
+setupDrop($('edrop'),$('fi0'));
+$('fi0').addEventListener('change',e=>{handleFile(e.target.files[0]);e.target.value='';});
+
+(async()=>{
+  const ok=await autoConnect();
+  if(ok){await loadRender();}
+})();
+</script>
+</body>
+</html>
