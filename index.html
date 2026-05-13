@@ -253,8 +253,22 @@ let db=null;
 const LC='ss_fb_cfg';
 
 function extractCfg(raw){
-  const s=raw.trim().replace(/^[\s\S]*?({)/,'$1').replace(/(})[\s\S]*$/,'$1');
-  return JSON.parse(s);
+  // Extracts each field individually — works with JS object notation (unquoted keys)
+  // AND with pasted JSON. Much more robust than trying to JSON.parse JS code.
+  const get=key=>{
+    const m=raw.match(new RegExp('["\']?'+key+'["\']?\\s*:\\s*["\']([^"\']+)["\']'));
+    return m?m[1]:'';
+  };
+  const cfg={
+    apiKey:           get('apiKey'),
+    authDomain:       get('authDomain'),
+    projectId:        get('projectId'),
+    storageBucket:    get('storageBucket'),
+    messagingSenderId:get('messagingSenderId'),
+    appId:            get('appId'),
+  };
+  if(!cfg.apiKey||!cfg.projectId) throw new Error('Champs manquants');
+  return cfg;
 }
 
 async function initFB(){
