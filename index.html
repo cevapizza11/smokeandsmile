@@ -137,10 +137,25 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
 
 <!-- ─── LOGIN ─── -->
 <div id="login-screen" style="position:fixed;inset:0;background:linear-gradient(135deg,#020817,#0a1628,#020c1a);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Syne',sans-serif;">
-  <div id="login-box" style="background:rgba(15,23,42,.97);border:1px solid rgba(56,189,248,.3);border-radius:16px;padding:36px 32px;width:100%;max-width:360px;text-align:center;transition:transform .15s;">
-    <div style="width:52px;height:52px;background:linear-gradient(135deg,#38bdf8,#0ea5e9);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px;">💨</div>
-    <div style="font-size:20px;font-weight:800;letter-spacing:.04em;margin-bottom:3px;">SMOKE & SMILE</div>
-    <div style="font-size:10px;color:#64748b;letter-spacing:.12em;margin-bottom:26px;">GESTION · NARBONNE</div>
+  <div id="login-box" style="background:rgba(15,23,42,.97);border:1px solid rgba(56,189,248,.3);border-radius:16px;padding:32px 28px;width:100%;max-width:400px;text-align:center;transition:transform .15s;">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.12em;color:#64748b;margin-bottom:20px;text-transform:uppercase">Choisir l'établissement</div>
+
+    <!-- Shop cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;">
+      <div id="shop-ss" onclick="selectShop('ss')"
+        style="border:2px solid rgba(56,189,248,.4);border-radius:12px;padding:16px 10px;cursor:pointer;transition:all .2s;background:rgba(56,189,248,.06);">
+        <div style="font-size:28px;margin-bottom:6px">💨</div>
+        <div style="font-size:12px;font-weight:700;color:#38bdf8;line-height:1.3">Smoke<br>&amp; Smile</div>
+        <div style="font-size:9px;color:#64748b;margin-top:3px">Narbonne</div>
+      </div>
+      <div id="shop-mb" onclick="selectShop('mb')"
+        style="border:2px solid rgba(245,158,11,.25);border-radius:12px;padding:16px 10px;cursor:pointer;transition:all .2s;background:rgba(245,158,11,.03);">
+        <div style="font-size:28px;margin-bottom:6px">🫕</div>
+        <div style="font-size:12px;font-weight:700;color:#f59e0b;line-height:1.3">La Marmite<br>Bleue</div>
+        <div style="font-size:9px;color:#64748b;margin-top:3px">Saint-Pierre-la-Mer</div>
+      </div>
+    </div>
+
     <div style="position:relative;margin-bottom:12px;">
       <input id="pwd-input" type="password" placeholder="Mot de passe"
         style="width:100%;background:#0a1628;border:1.5px solid rgba(56,189,248,.25);border-radius:10px;color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:16px;padding:13px 44px 13px 16px;outline:none;text-align:center;letter-spacing:.1em;box-sizing:border-box;"/>
@@ -171,9 +186,13 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
 <div id="app" style="display:none;flex-direction:column;height:100%;">
   <div id="header">
     <div class="logo">
-      <div class="logo-icon">💨</div>
-      <div><div class="logo-name">SMOKE & SMILE</div><div class="logo-sub">GESTION · NARBONNE</div></div>
+      <div class="logo-icon" id="header-icon">💨</div>
+      <div>
+        <div class="logo-name" id="header-name">SMOKE & SMILE</div>
+        <div class="logo-sub" id="header-sub">GESTION · NARBONNE</div>
+      </div>
     </div>
+    <button onclick="switchShop()" style="background:none;border:1px solid var(--b);border-radius:8px;color:var(--muted);font-family:var(--f);font-size:10px;padding:4px 10px;cursor:pointer;flex-shrink:0;white-space:nowrap;" title="Changer d'établissement">⇄ Changer</button>
     <div id="sync-ind"><div id="sdot"></div><span id="stxt">—</span></div>
     <div class="dz" id="dz" style="margin-left:auto"><span style="font-size:17px">📂</span><div><div class="dz-l">Importer</div><div class="dz-s">.xlsx · sync cloud</div></div></div>
     <input type="file" id="fi1" accept=".xlsx,.xls" style="display:none"/>
@@ -287,58 +306,28 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
 </div>
 
 <script>
-// ─── LOGIN — script autonome ───────────────────────────────
 (function(){
   var PWD_HASH = 'e0b44ff85e15124aa08c875f0bd34152d6b49cfe31154dbe57edd78ef9e3664d';
   var AUTH_KEY = 'ss_auth';
+  var SHOP_KEY = 'ss_shop';
+  var selectedShop = localStorage.getItem(SHOP_KEY) || 'ss';
 
-  function sha256(str){
-    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
-      .then(function(buf){
-        return Array.from(new Uint8Array(buf))
-          .map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-      });
-  }
+  window.getCurrentShop = function(){ return selectedShop; };
 
-  function shake(){
-    var box = document.getElementById('login-box');
-    box.style.transform='translateX(-8px)';
-    setTimeout(function(){ box.style.transform='translateX(8px)'; },80);
-    setTimeout(function(){ box.style.transform='translateX(-5px)'; },160);
-    setTimeout(function(){ box.style.transform='translateX(5px)'; },240);
-    setTimeout(function(){ box.style.transform='translateX(0)'; },320);
-  }
-
-  function doLogin(){
-    var pwd = document.getElementById('pwd-input').value;
-    if(!pwd) return;
-    var errEl = document.getElementById('login-err');
-    sha256(pwd).then(function(hash){
-      if(hash === PWD_HASH){
-        var remember = document.getElementById('remember-me').checked;
-        if(remember) localStorage.setItem(AUTH_KEY,'1');
-        else sessionStorage.setItem(AUTH_KEY,'1');
-        document.getElementById('login-screen').style.display='none';
-        if(typeof bootApp === 'function') bootApp();
-      } else {
-        errEl.textContent = 'Mot de passe incorrect';
-        shake();
-        setTimeout(function(){ errEl.textContent=''; }, 2500);
-        document.getElementById('pwd-input').select();
-      }
-    });
-  }
-
-  function toggleEye(){
-    var inp = document.getElementById('pwd-input');
-    var btn = document.getElementById('eye-btn');
-    if(inp.type === 'password'){ inp.type='text'; btn.textContent='🙈'; }
-    else { inp.type='password'; btn.textContent='👁'; }
-  }
-
-  function isAuth(){
-    return localStorage.getItem(AUTH_KEY)==='1' || sessionStorage.getItem(AUTH_KEY)==='1';
-  }
+  window.selectShop = function(shop){
+    selectedShop = shop;
+    localStorage.setItem(SHOP_KEY, shop);
+    var ss = document.getElementById('shop-ss');
+    var mb = document.getElementById('shop-mb');
+    if(!ss || !mb) return;
+    if(shop === 'ss'){
+      ss.style.borderColor = 'rgba(56,189,248,.9)';  ss.style.background = 'rgba(56,189,248,.12)';
+      mb.style.borderColor = 'rgba(245,158,11,.25)'; mb.style.background = 'rgba(245,158,11,.03)';
+    } else {
+      mb.style.borderColor = 'rgba(245,158,11,.9)';  mb.style.background = 'rgba(245,158,11,.12)';
+      ss.style.borderColor = 'rgba(56,189,248,.25)'; ss.style.background = 'rgba(56,189,248,.03)';
+    }
+  };
 
   window.logout = function(){
     localStorage.removeItem(AUTH_KEY);
@@ -346,22 +335,82 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
     location.reload();
   };
 
+  function sha256(str){
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+      .then(function(buf){
+        return Array.from(new Uint8Array(buf))
+          .map(function(b){ return b.toString(16).padStart(2,'0'); })
+          .join('');
+      });
+  }
+
+  function shake(){
+    var box = document.getElementById('login-box');
+    if(!box) return;
+    var moves = ['-9px','9px','-6px','6px','0'];
+    moves.forEach(function(v, i){
+      setTimeout(function(){ box.style.transform = 'translateX('+v+')'; }, i*80);
+    });
+  }
+
+  function doLogin(){
+    var inp = document.getElementById('pwd-input');
+    var pwd = inp ? inp.value : '';
+    if(!pwd){ if(inp) inp.focus(); return; }
+    sha256(pwd).then(function(hash){
+      if(hash === PWD_HASH){
+        var remember = document.getElementById('remember-me');
+        if(remember && remember.checked) localStorage.setItem(AUTH_KEY,'1');
+        else sessionStorage.setItem(AUTH_KEY,'1');
+        localStorage.setItem(SHOP_KEY, selectedShop);
+        var ls = document.getElementById('login-screen');
+        if(ls) ls.style.display = 'none';
+        setTimeout(function(){
+          if(typeof window.bootApp === 'function') window.bootApp();
+        }, 30);
+      } else {
+        var err = document.getElementById('login-err');
+        if(err){ err.textContent = 'Mot de passe incorrect'; setTimeout(function(){ err.textContent=''; }, 2500); }
+        shake();
+        if(inp) inp.select();
+      }
+    });
+  }
+
+  function isAuth(){
+    return localStorage.getItem(AUTH_KEY)==='1' || sessionStorage.getItem(AUTH_KEY)==='1';
+  }
+
   document.addEventListener('DOMContentLoaded', function(){
+    // Empêche le navigateur de télécharger le fichier quand on glisse
+    document.addEventListener('dragover', function(e){ e.preventDefault(); e.stopPropagation(); });
+    document.addEventListener('drop',     function(e){ e.preventDefault(); e.stopPropagation(); });
+
+    // Init shop UI
+    window.selectShop(selectedShop);
+
+    // Bind buttons
     var loginBtn = document.getElementById('login-btn');
     var eyeBtn   = document.getElementById('eye-btn');
     var pwdInput = document.getElementById('pwd-input');
     if(loginBtn) loginBtn.addEventListener('click', doLogin);
-    if(eyeBtn)   eyeBtn.addEventListener('click', toggleEye);
+    if(eyeBtn) eyeBtn.addEventListener('click', function(){
+      if(!pwdInput) return;
+      pwdInput.type = (pwdInput.type === 'password') ? 'text' : 'password';
+      eyeBtn.textContent = (pwdInput.type === 'password') ? '👁' : '🙈';
+    });
     if(pwdInput) pwdInput.addEventListener('keydown', function(e){
-      if(e.key==='Enter') doLogin();
+      if(e.key === 'Enter') doLogin();
     });
 
     if(isAuth()){
-      document.getElementById('login-screen').style.display='none';
-      // bootApp sera appelé quand le script principal sera prêt
-      document.addEventListener('appReady', function(){ if(typeof bootApp==='function') bootApp(); });
+      var ls = document.getElementById('login-screen');
+      if(ls) ls.style.display = 'none';
+      setTimeout(function(){
+        if(typeof window.bootApp === 'function') window.bootApp();
+      }, 50);
     } else {
-      if(pwdInput) setTimeout(function(){ pwdInput.focus(); }, 100);
+      if(pwdInput) setTimeout(function(){ pwdInput.focus(); }, 150);
     }
   });
 })();
@@ -406,6 +455,29 @@ function sync(state,txt){
   }
 }
 
+
+// ── GESTION MULTI-ÉTABLISSEMENTS ──
+const SHOPS = {
+  ss: { name:'Smoke & Smile', sub:'GESTION · NARBONNE',      icon:'💨' },
+  mb: { name:'La Marmite Bleue', sub:'GESTION · ST-PIERRE-LA-MER', icon:'🫕' },
+};
+
+function updateHeaderForShop(){
+  const s = SHOPS[window.getCurrentShop?window.getCurrentShop():'ss'];
+  if(!s) return;
+  const hi=$('header-icon'), hn=$('header-name'), hs=$('header-sub');
+  if(hi) hi.textContent=s.icon;
+  if(hn) hn.textContent=s.name;
+  if(hs) hs.textContent=s.sub;
+}
+
+window.switchShop = function(){
+  // Reset auth and go back to login to choose shop
+  sessionStorage.removeItem('ss_auth');
+  localStorage.removeItem('ss_auth');
+  location.reload();
+};
+
 // ── FIREBASE — config intégrée ──
 let db=null;
 const FBCFG={
@@ -426,12 +498,16 @@ async function autoConnect(){
 }
 function reconfig(){toast('Config Firebase intégrée — contacte le développeur pour la modifier.','var(--amber)');}
 
+// Collections dynamiques selon l'établissement
+function shopCol(){     return (window.getCurrentShop?window.getCurrentShop():'ss')+'_days';     }
+function shopImports(){ return (window.getCurrentShop?window.getCurrentShop():'ss')+'_imports';  }
+
 // ── DATA LAYER ──
 let LD={};// local days cache
 
 async function fetchDays(){
   sync('sy','Chargement…');
-  const snap=await db.collection('days').get();
+  const snap=await db.collection(shopCol()).get();
   LD={};snap.forEach(d=>{LD[d.id]=d.data();});
   sync('ok','Synchronisé');
   return LD;
@@ -441,18 +517,18 @@ async function saveBatch(upd){
   const keys=Object.keys(upd),SZ=450;
   for(let i=0;i<keys.length;i+=SZ){
     const b=db.batch();
-    keys.slice(i,i+SZ).forEach(ds=>b.set(db.collection('days').doc(ds),upd[ds],{merge:true}));
+    keys.slice(i,i+SZ).forEach(ds=>b.set(db.collection(shopCol()).doc(ds),upd[ds],{merge:true}));
     await b.commit();
   }
 }
 
 async function fetchImports(){
-  const snap=await db.collection('imports').orderBy('ts','desc').limit(50).get();
+  const snap=await db.collection(shopImports()).orderBy('ts','desc').limit(50).get();
   const a=[];snap.forEach(d=>a.push({id:d.id,...d.data()}));return a;
 }
 
-async function saveImport(e){await db.collection('imports').add({...e,ts:firebase.firestore.FieldValue.serverTimestamp()});}
-async function delImportDoc(id){await db.collection('imports').doc(id).delete();}
+async function saveImport(e){await db.collection(shopImports()).add({...e,ts:firebase.firestore.FieldValue.serverTimestamp()});}
+async function delImportDoc(id){await db.collection(shopImports()).doc(id).delete();}
 
 // ── PARSE + MERGE ──
 async function parseAndMerge(wb,fileName){
@@ -899,7 +975,7 @@ async function saveDayManual(){
   LD[ds]=entry;
   sync('sy','Sauvegarde…');
   try{
-    await db.collection('days').doc(ds).set(entry,{merge:true});
+    await db.collection(shopCol()).doc(ds).set(entry,{merge:true});
     // Log
     await saveImport({file:'Saisie manuelle',periode:ds.slice(8)+'/'+ds.slice(5,7)+'/'+ds.slice(0,4),newDates:_editDs?0:1,updDates:_editDs?1:0,nbDates:1,date:new Date().toISOString()});
     sync('ok','Synchronisé');
@@ -916,7 +992,7 @@ async function deleteDayManual(){
   const ds=_editDs;
   delete LD[ds];
   sync('sy','Suppression…');
-  await db.collection('days').doc(ds).delete();
+  await db.collection(shopCol()).doc(ds).delete();
   sync('ok','Synchronisé');
   closeModal();
   renderAll();
@@ -959,8 +1035,8 @@ async function loadRender(){await fetchDays();renderAll();}
 async function resetAll(){
   if(!confirm('Effacer TOUTES les données Firestore ?'))return;
   sync('sy','Suppression…');
-  const s1=await db.collection('days').get();const b1=db.batch();s1.forEach(d=>b1.delete(d.ref));await b1.commit();
-  const s2=await db.collection('imports').get();const b2=db.batch();s2.forEach(d=>b2.delete(d.ref));await b2.commit();
+  const s1=await db.collection(shopCol()).get();const b1=db.batch();s1.forEach(d=>b1.delete(d.ref));await b1.commit();
+  const s2=await db.collection(shopImports()).get();const b2=db.batch();s2.forEach(d=>b2.delete(d.ref));await b2.commit();
   LD={};Object.keys(CH).forEach(k=>{CH[k].destroy();delete CH[k];});
   sync('ok','Connecté');renderAll();toast('Données effacées','var(--red)');
 }
@@ -1006,11 +1082,44 @@ document.querySelectorAll('.tab').forEach(btn=>{
 });
 
 // ── BOOT ──
-setupDrop($('dz'),$('fi1'));
-setupDrop($('edrop'),$('fi0'));
-$('fi0').addEventListener('change',e=>{handleFile(e.target.files[0]);e.target.value='';});
+// Setup drag-and-drop after DOM is ready
+document.addEventListener('DOMContentLoaded', function(){
+  function setupDropZone(zoneId, inputId){
+    var zone  = document.getElementById(zoneId);
+    var input = document.getElementById(inputId);
+    if(!zone || !input){ console.warn('Drop zone not found:', zoneId, inputId); return; }
+
+    // Click to browse
+    zone.addEventListener('click', function(e){
+      e.stopPropagation();
+      input.click();
+    });
+
+    // Drag events — stopPropagation prevents global handler from interfering
+    zone.addEventListener('dragenter', function(e){ e.preventDefault(); e.stopPropagation(); zone.style.borderColor='#38bdf8'; zone.style.background='rgba(56,189,248,.08)'; });
+    zone.addEventListener('dragover',  function(e){ e.preventDefault(); e.stopPropagation(); });
+    zone.addEventListener('dragleave', function(e){ e.preventDefault(); e.stopPropagation(); zone.style.borderColor=''; zone.style.background=''; });
+    zone.addEventListener('drop',      function(e){
+      e.preventDefault(); e.stopPropagation();
+      zone.style.borderColor=''; zone.style.background='';
+      var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if(file) handleFile(file);
+    });
+
+    // File input change
+    input.addEventListener('change', function(e){
+      var file = e.target.files && e.target.files[0];
+      if(file) handleFile(file);
+      input.value = '';
+    });
+  }
+
+  setupDropZone('dz',    'fi1');
+  setupDropZone('edrop', 'fi0');
+});
 
 window.bootApp = async function bootApp(){
+  updateHeaderForShop();
   // Montre l'état vide immédiatement — l'utilisateur voit quelque chose
   renderAll();
 
