@@ -159,10 +159,11 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
   </div>
 </div>
 
-<div id="empty" style="display:none">
+<div id="empty">
   <div style="font-size:48px">💨</div>
   <h1>SMOKE & SMILE</h1>
-  <p>Importe ton premier fichier <strong style="color:var(--blue)">Top_Caisse_Analyse</strong> pour démarrer le suivi annuel.</p>
+  <div id="empty-sync" style="font-family:var(--m);font-size:11px;color:var(--amber);margin-bottom:4px;min-height:20px"></div>
+  <p>Importe ton fichier <strong style="color:var(--blue)">Top_Caisse_Analyse</strong> pour démarrer le suivi annuel.</p>
   <div class="dbig" id="edrop"><div class="dbi">📂</div><div class="dbt">Glisse ton fichier ici</div><div class="dbs">.xlsx exporté depuis ta caisse · ou clique</div></div>
   <input type="file" id="fi0" accept=".xlsx,.xls" style="display:none"/>
 </div>
@@ -395,7 +396,15 @@ function parseExcelDate(v){
 let _tt;
 function toast(msg,col='var(--blue)'){clearTimeout(_tt);const t=$('toast');t.textContent=msg;t.style.borderColor=col;t.classList.add('show');_tt=setTimeout(()=>t.classList.remove('show'),3000);}
 function prog(p){$('pb').style.width=p+'%';if(p>=100)setTimeout(()=>prog(0),600);}
-function sync(state,txt){$('sdot').className=state==='ok'?'ok':state==='sy'?'sy':'';$('stxt').textContent=txt;}
+function sync(state,txt){
+  var dot=$('sdot'),stxt=$('stxt'),es=$('empty-sync');
+  if(dot) dot.className=state==='ok'?'ok':state==='sy'?'sy':'';
+  if(stxt) stxt.textContent=txt;
+  if(es){
+    es.textContent=txt||'';
+    es.style.color=state==='ok'?'var(--green)':state==='sy'?'var(--amber)':'var(--red)';
+  }
+}
 
 // ── FIREBASE — config intégrée ──
 let db=null;
@@ -932,9 +941,17 @@ window.dImp=async id=>{await delImportDoc(id);renderImports();toast('Import supp
 // ── MASTER RENDER ──
 function renderAll(){
   const has=Object.keys(LD).length>0;
-  $('empty').style.display=has?'none':'flex';
-  $('app').style.display=has?'flex':'none';
-  if(has){renderAnnual();renderComparison();renderMonthly();renderDetail();renderImports();}
+  const empty=$('empty');
+  const app=$('app');
+  if(empty) empty.style.display=has?'none':'flex';
+  if(app)   app.style.display=has?'flex':'none';
+  if(has){
+    try{renderAnnual();}catch(e){console.error('renderAnnual:',e);}
+    try{renderComparison();}catch(e){console.error('renderComparison:',e);}
+    try{renderMonthly();}catch(e){console.error('renderMonthly:',e);}
+    try{renderDetail();}catch(e){console.error('renderDetail:',e);}
+    try{renderImports();}catch(e){console.error('renderImports:',e);}
+  }
 }
 async function loadRender(){await fetchDays();renderAll();}
 
@@ -993,25 +1010,36 @@ setupDrop($('dz'),$('fi1'));
 setupDrop($('edrop'),$('fi0'));
 $('fi0').addEventListener('change',e=>{handleFile(e.target.files[0]);e.target.value='';});
 
-async function bootApp(){
-  const ok=await autoConnect();
-  if(ok){
-    sync('sy','Chargement…');
-    await loadRender();
-  } else {
+window.bootApp = async function bootApp(){
+  // Montre l'état vide immédiatement — l'utilisateur voit quelque chose
+  renderAll();
+
+  // Puis tente la connexion Firebase
+  try {
+    const ok = await autoConnect();
+    if(ok){
+      sync('sy','Chargement des données…');
+      try {
+        await loadRender();
+        sync('ok','Synchronisé');
+        // Si on a des données, montre un toast de bienvenue
+        const nbJours = Object.keys(LD).length;
+        if(nbJours > 0) toast('✓ '+nbJours+' jours chargés depuis le cloud','var(--green)');
+      } catch(e) {
+        sync('','Erreur chargement');
+        toast('Erreur chargement données : '+e.message,'var(--red)');
+        console.error('loadRender error:',e);
+      }
+    } else {
+      sync('','Hors ligne');
+      toast('⚠️ Connexion Firebase impossible — mode hors ligne','var(--amber)');
+    }
+  } catch(e) {
     sync('','Erreur');
-    toast('❌ Connexion Firebase impossible','var(--red)');
+    toast('⚠️ Erreur de démarrage : '+e.message,'var(--amber)');
+    console.error('bootApp error:',e);
   }
 }
-
-// Démarrage — vérifie si déjà authentifié
-document.addEventListener('DOMContentLoaded', function(){
-  var AUTH_KEY='ss_auth';
-  var isAuth = localStorage.getItem(AUTH_KEY)==='1' || sessionStorage.getItem(AUTH_KEY)==='1';
-  if(isAuth){
-    document.dispatchEvent(new Event('appReady'));
-  }
-});
 </script>
 </body>
 </html>
