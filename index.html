@@ -173,7 +173,28 @@ const firebaseConfig = {
     </div>
 
     <div class="page" id="page-compare">
-      <div class="cmp-bar" id="cmpbar"></div>
+      <div class="cmp-bar" id="cmpbar" style="flex-direction:column;gap:10px;align-items:flex-start">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;width:100%">
+          <span style="font-size:11px;color:var(--muted);flex-shrink:0;letter-spacing:.08em">COMPARER</span>
+          <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <label style="font-size:9px;color:var(--blue);letter-spacing:.1em;text-transform:uppercase;font-family:var(--m)">Année 1</label>
+              <input id="inp-y1" type="text" maxlength="4" placeholder="2025"
+                style="width:76px;background:rgba(56,189,248,.08);border:1.5px solid var(--blue);border-radius:8px;color:var(--blue);font-family:var(--m);font-size:18px;font-weight:700;padding:6px 10px;outline:none;text-align:center;"
+                oninput="onYearInput()" />
+            </div>
+            <span style="font-size:20px;color:var(--dim);padding-bottom:6px">vs</span>
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <label style="font-size:9px;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;font-family:var(--m)">Année 2</label>
+              <input id="inp-y2" type="text" maxlength="4" placeholder="2026"
+                style="width:76px;background:rgba(245,158,11,.08);border:1.5px solid var(--amber);border-radius:8px;color:var(--amber);font-family:var(--m);font-size:18px;font-weight:700;padding:6px 10px;outline:none;text-align:center;"
+                oninput="onYearInput()" />
+            </div>
+            <div id="cmp-hint" style="font-size:11px;color:var(--red);display:none;padding-bottom:6px"></div>
+          </div>
+          <div id="cmp-avail" style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap"></div>
+        </div>
+      </div>
       <div class="kg" id="ckpis"></div>
       <div class="card"><div class="ct">CA mensuel — comparaison</div><div class="cw"><canvas id="can-c"></canvas></div></div>
       <div class="card"><div class="ct">Évolution % mois par mois</div><div class="cw" style="height:180px"><canvas id="can-cl"></canvas></div></div>
@@ -458,19 +479,64 @@ function renderAnnual(){
 window.sAYear=y=>{sAY=y;renderAnnual();};
 
 // ── RENDER COMPARISON ──
+// ── INPUT HANDLER ──
+let _cmpTimer=null;
+window.onYearInput=function(){
+  clearTimeout(_cmpTimer);
+  _cmpTimer=setTimeout(()=>{
+    const v1=($('inp-y1')||{}).value||'';
+    const v2=($('inp-y2')||{}).value||'';
+    if(v1.length===4&&v2.length===4&&v1!==v2){
+      cY1=v1;cY2=v2;
+      _renderCmpCharts();
+    }
+  },400);
+};
+
 function renderComparison(){
   const M=byMonth(LD),years=getYears(M);
+  // Show available years as quick-pick chips
+  const av=$('cmp-avail');
+  if(av){
+    av.innerHTML=years.length?`<span style="font-size:9px;color:var(--muted);letter-spacing:.08em">Années disponibles :</span>`+years.map(y=>`<button onclick="quickPick('${y}')" style="border:1px solid var(--b);background:none;color:var(--muted);padding:3px 10px;border-radius:14px;font-family:var(--f);font-size:11px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--b2)'" onmouseout="this.style.borderColor='var(--b)'">${y}</button>`).join(''):'';}
   if(years.length<2){
-    $('page-compare').innerHTML='<div style="text-align:center;padding:48px;color:var(--muted);font-size:13px"><div style="font-size:40px;margin-bottom:14px">📊</div>Importe des données sur <strong style="color:var(--text)">au moins 2 années</strong> pour voir la comparaison annuelle.</div>';
+    $('ckpis').innerHTML='';['can-c','can-cl'].forEach(id=>{const c=$(id);if(c){const p=c.parentElement;p.innerHTML='<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Pas encore assez d'années</div>';}});
+    $('tabl-c').innerHTML='';
     return;
   }
   if(!cY1)cY1=years[years.length-2];
   if(!cY2)cY2=years[years.length-1];
   if(cY1===cY2){cY1=years.find(y=>y!==cY2)||years[0];}
-  const y1=cY1,y2=cY2,YD=byYear(M),d1=YD[y1]||{ca:0,cb:0,esp:0,nbDays:0},d2=YD[y2]||{ca:0,cb:0,esp:0,nbDays:0};
+  // Sync inputs
+  const i1=$('inp-y1'),i2=$('inp-y2');
+  if(i1&&i1!==document.activeElement)i1.value=cY1;
+  if(i2&&i2!==document.activeElement)i2.value=cY2;
+  _renderCmpCharts();
+}
+
+window.quickPick=function(y){
+  const i1=$('inp-y1'),i2=$('inp-y2');
+  const M=byMonth(LD),years=getYears(M);
+  // First click fills Y1 if empty or both filled, second click fills Y2
+  if(!cY1||cY1===cY2){cY1=y;cY2=years.find(x=>x!==y)||y;}
+  else if(cY1===y){// already Y1, set as Y2
+    cY2=y;cY1=years.find(x=>x!==y)||y;
+  } else {cY2=y;}
+  if(i1)i1.value=cY1;if(i2)i2.value=cY2;
+  _renderCmpCharts();
+};
+
+function _renderCmpCharts(){
+  const M=byMonth(LD),years=getYears(M);
+  const YD=byYear(M);
+  const y1=cY1,y2=cY2;
+  const hint=$('cmp-hint');
+  // Validate years
+  if(!YD[y1]&&y1.length===4){if(hint){hint.textContent=`Aucune donnée pour ${y1}`;hint.style.display='block';}}
+  else if(hint)hint.style.display='none';
+
+  const d1=YD[y1]||{ca:0,cb:0,esp:0,nbDays:0},d2=YD[y2]||{ca:0,cb:0,esp:0,nbDays:0};
   const ev=dif(d2.ca,d1.ca);
-  const btnStyle=y=>`border:1px solid ${y===y1?'var(--blue)':y===y2?'var(--amber)':'var(--b)'};background:none;color:${y===y1?'var(--blue)':y===y2?'var(--amber)':'var(--muted)'};padding:3px 10px;border-radius:16px;font-family:var(--f);font-size:11px;cursor:pointer`;
-  $('cmpbar').innerHTML=`Comparaison <span class="cy1">${y1}</span> vs <span class="cy2">${y2}</span><span style="margin-left:auto;font-size:10px">Changer :</span>${years.map(y=>`<button onclick="sCmpY('${y}')" style="${btnStyle(y)}">${y}</button>`).join('')}`;
   const evm=dif(d2.nbDays?d2.ca/d2.nbDays:0,d1.nbDays?d1.ca/d1.nbDays:0);
   $('ckpis').innerHTML=[
     {l:`CA ${y2}`,v:fmt(d2.ca),s:`${y1} : ${fmtS(d1.ca)}`,c:'var(--amber)',b:ev},
@@ -492,7 +558,7 @@ function renderComparison(){
   const totCol=ev!=null&&+ev>=0?'var(--green)':'var(--red)';
   $('tabl-c').innerHTML=`<thead><tr><th style="text-align:left">Mois</th><th>CA ${y1}</th><th>CA ${y2}</th><th>Évol.</th><th>CB% ${y1}</th><th>CB% ${y2}</th></tr></thead><tbody>${Array.from({length:12},(_,i)=>{const m1=M[k1[i]],m2=M[k2[i]],e=m1&&m2?dif(m2.ca,m1.ca):null,col=e==null?'var(--muted)':+e>=0?'var(--green)':'var(--red)';return`<tr><td style="font-weight:600">${MO[i]}</td><td class="mn" style="color:var(--blue)">${m1?fmtS(m1.ca):'—'}</td><td class="mn" style="color:var(--amber)">${m2?fmtS(m2.ca):'—'}</td><td class="mn" style="color:${col};font-weight:700">${e!=null?(+e>=0?'▲ +':' ▼ ')+Math.abs(e)+'%':'—'}</td><td class="mn" style="color:var(--blue);font-size:11px">${m1?pct(m1.cb,m1.ca):'—'}</td><td class="mn" style="color:var(--amber);font-size:11px">${m2?pct(m2.cb,m2.ca):'—'}</td></tr>`;}).join('')}</tbody><tfoot><tr style="border-top:1px solid var(--b2)"><td style="font-weight:700">TOTAL</td><td class="mn" style="color:var(--blue);font-weight:700">${fmt(d1.ca)}</td><td class="mn" style="color:var(--amber);font-weight:700">${fmt(d2.ca)}</td><td class="mn" style="color:${totCol};font-weight:700">${ev!=null?(+ev>=0?'▲ +':' ▼ ')+Math.abs(ev)+'%':'—'}</td><td class="mn" style="color:var(--blue)">${pct(d1.cb,d1.ca)}</td><td class="mn" style="color:var(--amber)">${pct(d2.cb,d2.ca)}</td></tr></tfoot>`;
 }
-window.sCmpY=function(y){if(cY1===y)cY2=getYears(byMonth(LD)).find(x=>x!==y)||y;else if(cY2===y)cY1=y;else cY2=y;renderComparison();};
+// sCmpY kept for compat but quickPick handles UI now
 
 // ── RENDER MONTHLY ──
 function renderMonthly(){
