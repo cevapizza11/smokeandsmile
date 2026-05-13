@@ -179,7 +179,7 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
   <h1>SMOKE & SMILE</h1>
   <div id="empty-sync" style="font-family:var(--m);font-size:11px;color:var(--amber);margin-bottom:4px;min-height:20px"></div>
   <p>Importe ton fichier <strong style="color:var(--blue)">Top_Caisse_Analyse</strong> pour démarrer le suivi annuel.</p>
-  <input type="file" id="fi0" accept=".xlsx,.xls" style="display:none"/>
+  <input type="file" id="fi0" accept=".xlsx,.xls" style="display:none" onchange="window.importFile(this)"/>
   <label for="fi0" id="edrop" class="dbig">
     <div class="dbi">📂</div>
     <div class="dbt">Clique ici pour choisir ton fichier</div>
@@ -198,7 +198,7 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
     </div>
     <button onclick="switchShop()" style="background:none;border:1px solid var(--b);border-radius:8px;color:var(--muted);font-family:var(--f);font-size:10px;padding:4px 10px;cursor:pointer;flex-shrink:0;white-space:nowrap;" title="Changer d'établissement">⇄ Changer</button>
     <div id="sync-ind"><div id="sdot"></div><span id="stxt">—</span></div>
-    <input type="file" id="fi1" accept=".xlsx,.xls" style="display:none"/>
+    <input type="file" id="fi1" accept=".xlsx,.xls" style="display:none" onchange="window.importFile(this)"/>
     <label for="fi1" class="dz" style="margin-left:auto;cursor:pointer">
       <span style="font-size:17px">📂</span>
       <div><div class="dz-l">Importer un fichier</div><div class="dz-s">.xlsx · sync cloud</div></div>
@@ -487,6 +487,31 @@ window.switchShop = function(){
 
 // ── FIREBASE — config intégrée ──
 let db=null;
+
+// Fonction d'import — appelée directement depuis onchange HTML
+window.importFile = function(inputEl){
+  var file = inputEl && inputEl.files && inputEl.files[0];
+  if(inputEl) inputEl.value = ''; // reset pour pouvoir reimporter le même fichier
+  if(!file){ console.log('importFile: no file'); return; }
+  console.log('importFile: got file', file.name, 'db=', db ? 'OK' : 'NULL');
+  if(!db){
+    // Firebase pas encore prêt — attendre et réessayer
+    toast('⏳ Connexion Firebase en cours…', 'var(--amber)');
+    var retries = 0;
+    var retry = setInterval(function(){
+      retries++;
+      if(db){
+        clearInterval(retry);
+        handleFile(file);
+      } else if(retries > 10){
+        clearInterval(retry);
+        toast('❌ Firebase non connecté. Recharge la page.', 'var(--red)');
+      }
+    }, 500);
+    return;
+  }
+  handleFile(file);
+};
 const FBCFG={
   apiKey:"AIzaSyCp2uhejjBiIvYzk7RWmc6GF4Vdi4X0A9Q",
   authDomain:"smokeandsmile.firebaseapp.com",
@@ -1051,12 +1076,7 @@ async function resetAll(){
 // ── FILE HANDLING ──
 async function handleFile(f){
   if(!f){ toast('Aucun fichier sélectionné','var(--amber)'); return; }
-  if(!db){
-    toast('⏳ Connexion en cours, réessaie dans 2 secondes…','var(--amber)');
-    // Retry once after delay
-    setTimeout(function(){ handleFile(f); }, 2000);
-    return;
-  }
+  if(!db){ toast('❌ Firebase non connecté','var(--red)'); return; }
   prog(10);
   const r=new FileReader();
   r.onload=async e=>{
@@ -1096,36 +1116,20 @@ document.querySelectorAll('.tab').forEach(btn=>{
 
 // ── BOOT ──
 document.addEventListener('DOMContentLoaded', function(){
-  // Écoute les inputs fichier directement (méthode la plus fiable)
-  function bindInput(id){
-    var inp = document.getElementById(id);
-    if(!inp) return;
-    inp.addEventListener('change', function(e){
-      var file = e.target.files && e.target.files[0];
-      if(file) handleFile(file);
-      inp.value = '';
-    });
-  }
-  bindInput('fi0');
-  bindInput('fi1');
-
   // Drag & drop sur les zones label
-  function bindDrop(id){
+  ['edrop','fi1'].forEach(function(id){
     var el = document.getElementById(id);
     if(!el) return;
-    el.addEventListener('dragenter', function(e){ e.preventDefault(); e.stopPropagation(); el.style.borderColor='#38bdf8'; el.style.background='rgba(56,189,248,.1)'; });
+    el.addEventListener('dragenter', function(e){ e.preventDefault(); e.stopPropagation(); el.style.opacity='.7'; });
     el.addEventListener('dragover',  function(e){ e.preventDefault(); e.stopPropagation(); });
-    el.addEventListener('dragleave', function(e){ e.preventDefault(); e.stopPropagation(); el.style.borderColor=''; el.style.background=''; });
+    el.addEventListener('dragleave', function(e){ e.preventDefault(); e.stopPropagation(); el.style.opacity=''; });
     el.addEventListener('drop',      function(e){
       e.preventDefault(); e.stopPropagation();
-      el.style.borderColor=''; el.style.background='';
+      el.style.opacity='';
       var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-      if(file) handleFile(file);
+      if(file) window.importFile({files:[file], value:''});
     });
-  }
-  bindDrop('edrop');
-  bindDrop('fi1-label'); // label header zone
-
+  });
   // Bouton déconnexion
   var btnLogout = document.getElementById('btn-logout');
   if(btnLogout) btnLogout.addEventListener('click', function(){
