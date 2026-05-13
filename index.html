@@ -15,19 +15,19 @@
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f);}
 body{display:flex;flex-direction:column;overflow-x:hidden;}
 ::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
-#setup-overlay{position:fixed;inset:0;background:rgba(2,12,26,.97);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
-.setup-box{background:var(--bg3);border:1px solid var(--b2);border-radius:16px;padding:28px;max-width:520px;width:100%;}
+
+
 .setup-box h2{font-size:19px;font-weight:800;margin-bottom:6px;}
 .setup-box p{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:18px;}
-.steps{counter-reset:s;}
-.step{counter-increment:s;display:flex;gap:11px;margin-bottom:12px;align-items:flex-start;}
-.step::before{content:counter(s);width:21px;height:21px;border-radius:50%;background:rgba(56,189,248,.12);border:1px solid var(--blue);color:var(--blue);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
-.step p{font-size:12px;color:var(--muted);line-height:1.5;}
-.step a{color:var(--blue);}
-.setup-ta{width:100%;height:190px;background:var(--bg2);border:1px solid var(--b);border-radius:8px;color:var(--text);font-family:var(--m);font-size:11px;padding:12px;resize:none;outline:none;margin-bottom:14px;}
-.setup-ta:focus{border-color:var(--b2);}
-.btn-p{background:linear-gradient(135deg,var(--blue),#0ea5e9);border:none;border-radius:9px;color:#fff;font-family:var(--f);font-size:13px;font-weight:700;padding:11px 24px;cursor:pointer;width:100%;letter-spacing:.04em;}
-.setup-err{color:var(--red);font-size:11px;margin-bottom:10px;display:none;}
+
+
+
+
+
+
+
+
+
 #prog{position:fixed;top:0;left:0;right:0;height:3px;z-index:300;}
 #pb{height:3px;background:linear-gradient(90deg,var(--blue),#0ea5e9);width:0%;transition:width .3s;}
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--bg3);border:1px solid var(--b2);border-radius:10px;padding:10px 20px;font-size:13px;z-index:400;transition:transform .3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,.6);}
@@ -104,36 +104,72 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
 .dbig .dbi{font-size:34px;margin-bottom:10px;}
 .dbig .dbt{font-size:13px;font-weight:700;color:#94a3b8;}
 .dbig .dbs{font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* ─── MODAL ─── */
+.modal-overlay{position:fixed;inset:0;background:rgba(2,12,26,.88);z-index:600;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg3);border:1px solid var(--b2);border-radius:14px;padding:24px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;}
+.modal h3{font-size:16px;font-weight:800;margin-bottom:4px;}
+.modal .msub{font-size:11px;color:var(--muted);margin-bottom:20px;}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;}
+.fg label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.fg input{background:var(--bg2);border:1px solid var(--b);border-radius:8px;color:var(--text);font-family:var(--m);font-size:14px;padding:9px 12px;outline:none;transition:border-color .2s;}
+.fg input:focus{border-color:var(--b2);}
+.fg .hint{font-size:10px;color:var(--dim);margin-top:2px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-actions{display:flex;gap:8px;margin-top:18px;}
+.btn-save{flex:1;background:linear-gradient(135deg,var(--blue),#0ea5e9);border:none;border-radius:9px;color:#fff;font-family:var(--f);font-size:13px;font-weight:700;padding:11px;cursor:pointer;}
+.btn-cancel{background:none;border:1px solid var(--b);border-radius:9px;color:var(--muted);font-family:var(--f);font-size:13px;padding:11px 18px;cursor:pointer;}
+.btn-delday{background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.3);border-radius:9px;color:var(--red);font-family:var(--f);font-size:12px;padding:11px 14px;cursor:pointer;}
+.modal-err{color:var(--red);font-size:11px;margin-bottom:10px;display:none;}
+/* add-day btn */
+.btn-add{background:rgba(56,189,248,.12);border:1px solid var(--b2);border-radius:9px;color:var(--blue);font-family:var(--f);font-size:11px;font-weight:700;padding:6px 13px;cursor:pointer;flex-shrink:0;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.btn-add:hover{background:rgba(56,189,248,.2);}
+
+/* ─── LOGIN ─── */
+#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#020817 0%,#0a1628 50%,#020c1a 100%);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;}
+.login-box{background:rgba(15,23,42,.95);border:1px solid rgba(56,189,248,.25);border-radius:16px;padding:36px 32px;width:100%;max-width:380px;text-align:center;}
+.login-logo{width:52px;height:52px;background:linear-gradient(135deg,var(--blue),#0ea5e9);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 18px;}
+.login-title{font-size:22px;font-weight:800;letter-spacing:.04em;margin-bottom:4px;}
+.login-sub{font-size:11px;color:var(--muted);letter-spacing:.1em;margin-bottom:28px;}
+.login-fg{position:relative;margin-bottom:14px;}
+.login-fg input{width:100%;background:var(--bg2);border:1.5px solid var(--b);border-radius:10px;color:var(--text);font-family:var(--m);font-size:16px;padding:13px 44px 13px 16px;outline:none;text-align:center;letter-spacing:.12em;transition:border-color .2s;}
+.login-fg input:focus{border-color:var(--b2);}
+.login-fg .eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0;}
+.login-btn{width:100%;background:linear-gradient(135deg,var(--blue),#0ea5e9);border:none;border-radius:10px;color:#fff;font-family:var(--f);font-size:14px;font-weight:700;padding:13px;cursor:pointer;letter-spacing:.05em;transition:opacity .2s;margin-top:4px;}
+.login-btn:hover{opacity:.9;}
+.login-btn:active{opacity:.8;}
+.login-err{color:var(--red);font-size:12px;margin-top:10px;min-height:18px;transition:opacity .3s;}
+.login-remember{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:14px;font-size:11px;color:var(--muted);cursor:pointer;}
+.login-remember input{accent-color:var(--blue);width:14px;height:14px;cursor:pointer;}
+.login-shake{animation:shake .4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
 </style>
 </head>
 <body>
 <div id="prog"><div id="pb"></div></div>
 <div id="toast"></div>
 
-<div id="setup-overlay">
-  <div class="setup-box">
-    <div style="font-size:26px;margin-bottom:8px">🔥</div>
-    <h2>Configuration Firebase</h2>
-    <p>Pour synchroniser sur tous tes appareils, connecte ta base Firebase gratuite.</p>
-    <div class="steps">
-      <div class="step"><p>Va sur <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong>Créer un projet</strong> → nomme-le <strong>smoke-smile</strong></p></div>
-      <div class="step"><p><strong>Firestore Database</strong> → Créer une base → Mode <strong>Production</strong> → Région <strong>europe-west3 (Frankfurt)</strong></p></div>
-      <div class="step"><p><strong>Règles</strong> Firestore → remplace tout par : <code style="background:var(--bg2);padding:2px 6px;border-radius:4px;font-size:10px">rules_version='2'; service cloud.firestore { match /databases/{database}/documents { match /{document=**} { allow read, write: if true; } } }</code> → Publier</p></div>
-      <div class="step"><p>⚙️ Paramètres du projet → <strong>Tes applications</strong> → Ajouter une appli Web → Copie et colle l'objet <strong>firebaseConfig</strong> ci-dessous</p></div>
-    </div>
-    <div class="setup-err" id="serr"></div>
-    <textarea class="setup-ta" id="sinput" placeholder='Colle ici ton firebaseConfig :
+</div>
 
-const firebaseConfig = {
-  apiKey: "AIza...",
-  authDomain: "smoke-smile.firebaseapp.com",
-  projectId: "smoke-smile",
-  storageBucket: "smoke-smile.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123..."
-};'></textarea>
-    <button class="btn-p" onclick="initFB()">Connecter Firebase →</button>
-    <p style="text-align:center;font-size:10px;color:var(--dim);margin-top:10px">Config sauvegardée localement sur cet appareil</p>
+<!-- ─── LOGIN ─── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">💨</div>
+    <div class="login-title">SMOKE & SMILE</div>
+    <div class="login-sub">GESTION · NARBONNE</div>
+    <div class="login-fg">
+      <input type="password" id="pwd-input" placeholder="Mot de passe"
+        onkeydown="if(event.key==='Enter')tryLogin()"
+        autocomplete="current-password"/>
+      <button class="eye" id="eye-btn" onclick="toggleEye()" tabindex="-1">👁</button>
+    </div>
+    <button class="login-btn" onclick="tryLogin()">Connexion →</button>
+    <div class="login-err" id="login-err"></div>
+    <label class="login-remember">
+      <input type="checkbox" id="remember-me" checked/>
+      Rester connecté sur cet appareil
+    </label>
   </div>
 </div>
 
@@ -154,6 +190,8 @@ const firebaseConfig = {
     <div id="sync-ind"><div id="sdot"></div><span id="stxt">—</span></div>
     <div class="dz" id="dz" style="margin-left:auto"><span style="font-size:17px">📂</span><div><div class="dz-l">Importer</div><div class="dz-s">.xlsx · sync cloud</div></div></div>
     <input type="file" id="fi1" accept=".xlsx,.xls" style="display:none"/>
+    <button class="btn-add" onclick="openModal(null)">＋ Saisie manuelle</button>
+    <button onclick="logout()" style="background:none;border:1px solid var(--b);border-radius:9px;color:var(--muted);font-family:var(--f);font-size:11px;padding:6px 12px;cursor:pointer;flex-shrink:0;transition:all .2s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">⎋ Déconnexion</button>
   </div>
   <div id="tabs">
     <button class="tab active" data-page="annual">Annuel</button>
@@ -253,7 +291,7 @@ const firebaseConfig = {
       </div>
       <div class="card"><div class="ct">Historique des imports</div><div id="ilist"></div></div>
       <div style="text-align:center;margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <button onclick="reconfig()" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);color:var(--blue);padding:9px 18px;border-radius:9px;font-family:var(--f);font-size:12px;cursor:pointer;">⚙️ Reconfigurer Firebase</button>
+        
         <button onclick="resetAll()" style="background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.3);color:var(--red);padding:9px 18px;border-radius:9px;font-family:var(--f);font-size:12px;cursor:pointer;">🗑 Effacer toutes les données</button>
       </div>
     </div>
@@ -293,63 +331,25 @@ function toast(msg,col='var(--blue)'){clearTimeout(_tt);const t=$('toast');t.tex
 function prog(p){$('pb').style.width=p+'%';if(p>=100)setTimeout(()=>prog(0),600);}
 function sync(state,txt){$('sdot').className=state==='ok'?'ok':state==='sy'?'sy':'';$('stxt').textContent=txt;}
 
-// ── FIREBASE ──
+// ── FIREBASE — config intégrée ──
 let db=null;
-const LC='ss_fb_cfg';
-
-function extractCfg(raw){
-  // Extracts each field individually — works with JS object notation (unquoted keys)
-  // AND with pasted JSON. Much more robust than trying to JSON.parse JS code.
-  const get=key=>{
-    const m=raw.match(new RegExp('["\']?'+key+'["\']?\\s*:\\s*["\']([^"\']+)["\']'));
-    return m?m[1]:'';
-  };
-  const cfg={
-    apiKey:           get('apiKey'),
-    authDomain:       get('authDomain'),
-    projectId:        get('projectId'),
-    storageBucket:    get('storageBucket'),
-    messagingSenderId:get('messagingSenderId'),
-    appId:            get('appId'),
-  };
-  if(!cfg.apiKey||!cfg.projectId) throw new Error('Champs manquants');
-  return cfg;
-}
-
-async function initFB(){
-  const raw=$('sinput').value.trim();
-  if(!raw){showErr('Colle ta configuration Firebase.');return;}
-  let cfg;
-  try{cfg=extractCfg(raw);}catch(e){showErr('Format invalide. Copie l\'objet {apiKey:…} complet.');return;}
-  if(!cfg.apiKey||!cfg.projectId){showErr('apiKey ou projectId manquant.');return;}
-  try{
-    if(firebase.apps.length)await firebase.app().delete();
-    firebase.initializeApp(cfg);
-    db=firebase.firestore();
-    await db.collection('_ping').doc('t').set({t:Date.now()});
-    localStorage.setItem(LC,JSON.stringify(cfg));
-    $('setup-overlay').style.display='none';
-    sync('ok','Connecté');
-    toast('✓ Firebase connecté !','var(--green)');
-    await loadRender();
-  }catch(e){showErr('Erreur connexion : '+e.message);}
-}
-function showErr(m){$('serr').textContent=m;$('serr').style.display='block';}
-function reconfig(){$('setup-overlay').style.display='flex';}
-
+const FBCFG={
+  apiKey:"AIzaSyCp2uhejjBiIvYzk7RWmc6GF4Vdi4X0A9Q",
+  authDomain:"smokeandsmile.firebaseapp.com",
+  projectId:"smokeandsmile",
+  storageBucket:"smokeandsmile.firebasestorage.app",
+  messagingSenderId:"344160852761",
+  appId:"1:344160852761:web:51f9f43a13d07228dac388"
+};
 async function autoConnect(){
-  const s=localStorage.getItem(LC);
-  if(!s)return false;
   try{
-    const cfg=JSON.parse(s);
-    if(firebase.apps.length)await firebase.app().delete();
-    firebase.initializeApp(cfg);
+    if(firebase.apps.length) firebase.app().delete();
+    firebase.initializeApp(FBCFG);
     db=firebase.firestore();
-    $('setup-overlay').style.display='none';
-    sync('sy','Chargement…');
     return true;
-  }catch{return false;}
+  }catch(e){console.error('Firebase:',e);return false;}
 }
+function reconfig(){toast('Config Firebase intégrée — contacte le développeur pour la modifier.','var(--amber)');}
 
 // ── DATA LAYER ──
 let LD={};// local days cache
@@ -483,11 +483,12 @@ function renderAnnual(){
   const yr=sAY,YD=byYear(M),tot=YD[yr]||{ca:0,cb:0,esp:0,nbDays:0};
   $('lany').textContent=yr;
   const prev=YD[String(+yr-1)],d1=dif(tot.ca,prev?.ca);
+  const dTx=dif(tot.nbTx,prev?.nbTx);
   $('akpis').innerHTML=[
     {l:'CA Total '+yr,v:fmt(tot.ca),s:prev?`Préc. : ${fmtS(prev.ca)}`:tot.nbDays+' jours',c:YC[years.indexOf(yr)]||YC[0],b:d1},
     {l:'CA Moyen/Jour', v:fmtS(tot.nbDays?tot.ca/tot.nbDays:0),s:'jours ouverts',c:'var(--amber)'},
-    {l:'CB',v:pct(tot.cb,tot.ca),s:fmt(tot.cb),c:'var(--blue)'},
-    {l:'Espèces',v:pct(tot.esp,tot.ca),s:fmt(tot.esp),c:'var(--purple)'},
+    {l:'Transactions',v:String(tot.nbTx||0),s:prev?`Préc. : ${prev.nbTx||0}`:'total année',c:'var(--green)',b:dTx},
+    {l:'Panier moyen',v:tot.nbTx?fmtS(tot.ca/tot.nbTx):'—',s:'CA / transaction',c:'var(--purple)'},
   ].map(k=>`<div class="kpi"><div class="kl">${k.l}</div><div class="kv" style="color:${k.c}">${k.v}${k.b!=null?`<span style="font-size:11px;margin-left:5px;color:${+k.b>=0?'var(--green)':'var(--red)'}">${+k.b>=0?'▲':'▼'}${Math.abs(k.b)}%</span>`:''}</div><div class="ks">${k.s}</div></div>`).join('');
   const k12=Array.from({length:12},(_,i)=>`${yr}-${String(i+1).padStart(2,'0')}`);
   const yM=Object.fromEntries(Object.entries(M).filter(([mk])=>mk.startsWith(yr)));
@@ -498,7 +499,7 @@ function renderAnnual(){
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true,pointStyleWidth:8}},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:TICK,stacked:true},y:{grid:{color:GRID},ticks:{...TICKM,callback:v=>v+'€'},stacked:true}}}});
   dc('p');
   CH['p']=new Chart($('can-p').getContext('2d'),{type:'doughnut',data:{labels:['CB','Espèces'],datasets:[{data:[tot.cb,tot.esp],backgroundColor:['rgba(56,189,248,.8)','rgba(245,158,11,.7)'],borderColor:'transparent',borderRadius:4}]},options:{cutout:'65%',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:'#94a3b8',font:{size:11},usePointStyle:true}},tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.raw)}`}}}}});
-  $('tabl-a').innerHTML=`<thead><tr><th style="text-align:left">Mois</th><th>CA</th><th>Jours</th><th>CA/Jour</th><th>% CB</th><th>% Esp.</th></tr></thead><tbody>${k12.map((mk,i)=>{const m=yM[mk];if(!m)return`<tr style="opacity:.25"><td>${MO[i]}</td><td class="mn" colspan="5">—</td></tr>`;return`<tr><td style="font-weight:600">${MO[i]}</td><td class="mn" style="color:var(--blue);font-weight:700">${fmt(m.ca)}</td><td class="mn" style="color:var(--muted)">${m.nbDays}</td><td class="mn" style="color:var(--muted)">${fmtS(m.nbDays?m.ca/m.nbDays:0)}</td><td class="mn" style="color:var(--blue);font-size:11px">${pct(m.cb,m.ca)}</td><td class="mn" style="color:var(--amber);font-size:11px">${pct(m.esp,m.ca)}</td></tr>`;}).join('')}</tbody><tfoot><tr style="border-top:1px solid var(--b2)"><td style="font-weight:700">TOTAL</td><td class="mn" style="color:var(--green);font-weight:700">${fmt(tot.ca)}</td><td class="mn" style="color:var(--muted)">${tot.nbDays}</td><td class="mn" style="color:var(--muted)">${fmtS(tot.nbDays?tot.ca/tot.nbDays:0)}</td><td class="mn" style="color:var(--blue)">${pct(tot.cb,tot.ca)}</td><td class="mn" style="color:var(--amber)">${pct(tot.esp,tot.ca)}</td></tr></tfoot>`;
+  $('tabl-a').innerHTML=`<thead><tr><th style="text-align:left">Mois</th><th>CA</th><th>Jours</th><th>Transact.</th><th>Panier</th><th>% CB</th><th>% Esp.</th></tr></thead><tbody>${k12.map((mk,i)=>{const m=yM[mk];if(!m)return`<tr style="opacity:.25"><td>${MO[i]}</td><td class="mn" colspan="6">—</td></tr>`;return`<tr><td style="font-weight:600">${MO[i]}</td><td class="mn" style="color:var(--blue);font-weight:700">${fmt(m.ca)}</td><td class="mn" style="color:var(--muted)">${m.nbDays}</td><td class="mn" style="color:var(--green)">${m.nbTx||0}</td><td class="mn" style="color:var(--muted);font-size:11px">${m.nbTx?fmtS(m.ca/m.nbTx):'—'}</td><td class="mn" style="color:var(--blue);font-size:11px">${pct(m.cb,m.ca)}</td><td class="mn" style="color:var(--amber);font-size:11px">${pct(m.esp,m.ca)}</td></tr>`;}).join('')}</tbody><tfoot><tr style="border-top:1px solid var(--b2)"><td style="font-weight:700">TOTAL</td><td class="mn" style="color:var(--green);font-weight:700">${fmt(tot.ca)}</td><td class="mn" style="color:var(--muted)">${tot.nbDays}</td><td class="mn" style="color:var(--green);font-weight:700">${tot.nbTx||0}</td><td class="mn" style="color:var(--muted)">${tot.nbTx?fmtS(tot.ca/tot.nbTx):'—'}</td><td class="mn" style="color:var(--blue)">${pct(tot.cb,tot.ca)}</td><td class="mn" style="color:var(--amber)">${pct(tot.esp,tot.ca)}</td></tr></tfoot>`;
 }
 window.sAYear=y=>{sAY=y;renderAnnual();};
 
@@ -562,25 +563,27 @@ function _renderCmpCharts(){
   const d1=YD[y1]||{ca:0,cb:0,esp:0,nbDays:0},d2=YD[y2]||{ca:0,cb:0,esp:0,nbDays:0};
   const ev=dif(d2.ca,d1.ca);
   const evm=dif(d2.nbDays?d2.ca/d2.nbDays:0,d1.nbDays?d1.ca/d1.nbDays:0);
+  const evTx=dif(d2.nbTx,d1.nbTx);
+  const evPan=dif(d2.nbTx?d2.ca/d2.nbTx:0,d1.nbTx?d1.ca/d1.nbTx:0);
   $('ckpis').innerHTML=[
-    {l:`CA ${y2}`,v:fmt(d2.ca),s:`${y1} : ${fmtS(d1.ca)}`,c:'var(--amber)',b:ev},
-    {l:`CA ${y1}`,v:fmt(d1.ca),s:d1.nbDays+' jours',c:'var(--blue)'},
+    {l:`CA ${y2} vs ${y1}`,v:fmt(d2.ca),s:`${y1} : ${fmtS(d1.ca)}`,c:'var(--amber)',b:ev},
     {l:'Évolution CA',v:ev!=null?(+ev>=0?'▲ +':' ▼ ')+Math.abs(ev)+'%':'—',s:`${y1} → ${y2}`,c:ev!=null&&+ev>=0?'var(--green)':'var(--red)'},
-    {l:'CA/Jour évol.',v:evm!=null?(+evm>=0?'▲ +':' ▼ ')+Math.abs(evm)+'%':'—',s:`${fmtS(d1.nbDays?d1.ca/d1.nbDays:0)} → ${fmtS(d2.nbDays?d2.ca/d2.nbDays:0)}`,c:evm!=null&&+evm>=0?'var(--green)':'var(--red)'},
-  ].map(k=>`<div class="kpi"><div class="kl">${k.l}</div><div class="kv" style="color:${k.c}">${k.v}${k.b!=null?`<span style="font-size:11px;margin-left:5px;color:${+k.b>=0?'var(--green)':'var(--red)'}">${+k.b>=0?'▲':'▼'}${Math.abs(k.b)}%</span>`:''}</div><div class="ks">${k.s}</div></div>`).join('');
+    {l:'Transactions',v:`${d1.nbTx||0} → ${d2.nbTx||0}`,s:evTx!=null?(+evTx>=0?'▲ +':' ▼ ')+Math.abs(evTx)+'%':'—',c:'var(--green)',b:evTx},
+    {l:'Panier moyen',v:`${d1.nbTx?fmtS(d1.ca/d1.nbTx):'—'} → ${d2.nbTx?fmtS(d2.ca/d2.nbTx):'—'}`,s:evPan!=null?(+evPan>=0?'▲ +':' ▼ ')+Math.abs(evPan)+'%':'—',c:'var(--purple)'},
+  ].map(k=>`<div class="kpi"><div class="kl">${k.l}</div><div class="kv" style="color:${k.c};font-size:${k.l.includes('→')?'13px':'17px'}">${k.v}${k.b!=null?`<span style="font-size:11px;margin-left:5px;color:${+k.b>=0?'var(--green)':'var(--red)'}">${+k.b>=0?'▲':'▼'}${Math.abs(k.b)}%</span>`:''}</div><div class="ks">${k.s}</div></div>`).join('');
   const k1=Array.from({length:12},(_,i)=>`${y1}-${String(i+1).padStart(2,'0')}`);
   const k2=Array.from({length:12},(_,i)=>`${y2}-${String(i+1).padStart(2,'0')}`);
   const v1=k1.map(mk=>M[mk]?.ca||0),v2=k2.map(mk=>M[mk]?.ca||0);
   dc('c');
   CH['c']=new Chart($('can-c').getContext('2d'),{type:'bar',data:{labels:MS,datasets:[
-    {label:y1,data:v1,backgroundColor:'rgba(56,189,248,.7)',borderRadius:[4,4,0,0]},
-    {label:y2,data:v2,backgroundColor:'rgba(245,158,11,.7)',borderRadius:[4,4,0,0]},
+    {label:'CA '+y1,data:v1,backgroundColor:'rgba(56,189,248,.7)',borderRadius:[4,4,0,0]},
+    {label:'CA '+y2,data:v2,backgroundColor:'rgba(245,158,11,.7)',borderRadius:[4,4,0,0]},
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true,pointStyleWidth:8}},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:{...TICKM,callback:v=>v+'€'}}}}});
   const evLine=v1.map((a,i)=>v2[i]&&a?+dif(v2[i],a):null);
   dc('cl');
   CH['cl']=new Chart($('can-cl').getContext('2d'),{type:'line',data:{labels:MS,datasets:[{label:`Évolution % (${y1}→${y2})`,data:evLine,borderColor:'var(--green)',backgroundColor:'rgba(74,222,128,.1)',pointBackgroundColor:evLine.map(v=>v===null?'transparent':+v>=0?'var(--green)':'var(--red)'),pointRadius:5,tension:.3,fill:true,spanGaps:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:ctx=>ctx.raw!=null?` ${ctx.raw>=0?'+':''}${ctx.raw}%`:' —'}}},scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:{...TICKM,callback:v=>v+'%'},afterDataLimits:ax=>{const ex=Math.max(10,Math.abs(ax.max||0),Math.abs(ax.min||0));ax.max=ex;ax.min=-ex;}}}}});
   const totCol=ev!=null&&+ev>=0?'var(--green)':'var(--red)';
-  $('tabl-c').innerHTML=`<thead><tr><th style="text-align:left">Mois</th><th>CA ${y1}</th><th>CA ${y2}</th><th>Évol.</th><th>CB% ${y1}</th><th>CB% ${y2}</th></tr></thead><tbody>${Array.from({length:12},(_,i)=>{const m1=M[k1[i]],m2=M[k2[i]],e=m1&&m2?dif(m2.ca,m1.ca):null,col=e==null?'var(--muted)':+e>=0?'var(--green)':'var(--red)';return`<tr><td style="font-weight:600">${MO[i]}</td><td class="mn" style="color:var(--blue)">${m1?fmtS(m1.ca):'—'}</td><td class="mn" style="color:var(--amber)">${m2?fmtS(m2.ca):'—'}</td><td class="mn" style="color:${col};font-weight:700">${e!=null?(+e>=0?'▲ +':' ▼ ')+Math.abs(e)+'%':'—'}</td><td class="mn" style="color:var(--blue);font-size:11px">${m1?pct(m1.cb,m1.ca):'—'}</td><td class="mn" style="color:var(--amber);font-size:11px">${m2?pct(m2.cb,m2.ca):'—'}</td></tr>`;}).join('')}</tbody><tfoot><tr style="border-top:1px solid var(--b2)"><td style="font-weight:700">TOTAL</td><td class="mn" style="color:var(--blue);font-weight:700">${fmt(d1.ca)}</td><td class="mn" style="color:var(--amber);font-weight:700">${fmt(d2.ca)}</td><td class="mn" style="color:${totCol};font-weight:700">${ev!=null?(+ev>=0?'▲ +':' ▼ ')+Math.abs(ev)+'%':'—'}</td><td class="mn" style="color:var(--blue)">${pct(d1.cb,d1.ca)}</td><td class="mn" style="color:var(--amber)">${pct(d2.cb,d2.ca)}</td></tr></tfoot>`;
+  $('tabl-c').innerHTML=`<thead><tr><th style="text-align:left">Mois</th><th>CA ${y1}</th><th>CA ${y2}</th><th>Évol.</th><th>CB% ${y1}</th><th>CB% ${y2}</th></tr></thead><tbody>${Array.from({length:12},(_,i)=>{const m1=M[k1[i]],m2=M[k2[i]],e=m1&&m2?dif(m2.ca,m1.ca):null,eTx=m1&&m2&&m1.nbTx&&m2.nbTx?dif(m2.nbTx,m1.nbTx):null,col=e==null?'var(--muted)':+e>=0?'var(--green)':'var(--red)',colTx=eTx==null?'var(--muted)':+eTx>=0?'var(--green)':'var(--red)';return`<tr><td style="font-weight:600">${MO[i]}</td><td class="mn" style="color:var(--blue)">${m1?fmtS(m1.ca):'—'}</td><td class="mn" style="color:var(--amber)">${m2?fmtS(m2.ca):'—'}</td><td class="mn" style="color:${col};font-weight:700">${e!=null?(+e>=0?'▲ +':' ▼ ')+Math.abs(e)+'%':'—'}</td><td class="mn" style="color:var(--green)">${m1?.nbTx||'—'}</td><td class="mn" style="color:var(--green)">${m2?.nbTx||'—'}</td><td class="mn" style="color:${colTx};font-weight:700">${eTx!=null?(+eTx>=0?'▲ +':' ▼ ')+Math.abs(eTx)+'%':'—'}</td></tr>`;}).join('')}</tbody><tfoot><tr style="border-top:1px solid var(--b2)"><td style="font-weight:700">TOTAL</td><td class="mn" style="color:var(--blue);font-weight:700">${fmt(d1.ca)}</td><td class="mn" style="color:var(--amber);font-weight:700">${fmt(d2.ca)}</td><td class="mn" style="color:${totCol};font-weight:700">${ev!=null?(+ev>=0?'▲ +':' ▼ ')+Math.abs(ev)+'%':'—'}</td><td class="mn" style="color:var(--blue)">${pct(d1.cb,d1.ca)}</td><td class="mn" style="color:var(--amber)">${pct(d2.cb,d2.ca)}</td></tr></tfoot>`;
 }
 // sCmpY kept for compat but quickPick handles UI now
 
@@ -627,8 +630,8 @@ function renderMonthDet(mk,M){
   $('mkpis').innerHTML=[
     {l:'CA du mois',v:fmt(m.ca),s:m.nbDays+' jours',c:'var(--blue)'},
     {l:'CA Moyen/Jour',v:fmtS(m.nbDays?m.ca/m.nbDays:0),s:'',c:'var(--amber)'},
-    {l:'CB',v:pct(m.cb,m.ca),s:fmt(m.cb),c:'var(--blue)'},
-    {l:'Espèces',v:pct(m.esp,m.ca),s:fmt(m.esp),c:'var(--purple)'},
+    {l:'Transactions',v:String(m.nbTx||0),s:m.nbTx&&m.ca?'Panier : '+fmtS(m.ca/m.nbTx):'—',c:'var(--green)'},
+    {l:'CB / Espèces',v:pct(m.cb,m.ca),s:fmt(m.esp)+' esp.',c:'var(--blue)'},
   ].map(k=>`<div class="kpi"><div class="kl">${k.l}</div><div class="kv" style="color:${k.c}">${k.v}</div><div class="ks">${k.s}</div></div>`).join('');
 
   // ── Jours du mois
@@ -638,8 +641,9 @@ function renderMonthDet(mk,M){
   let bestDay=dk.reduce((a,b)=>(LD[a]?.ca||0)>(LD[b]?.ca||0)?a:b, dk[0]);
   $('tabl-daily').innerHTML=`
     <thead><tr>
+      <th style="text-align:left"></th>
       <th style="text-align:left">Date</th>
-      <th>CA</th><th>CB</th><th>Espèces</th><th>% CB</th><th>% Esp.</th>
+      <th>CA</th><th>Transact.</th><th>Panier</th><th>CB</th><th>Espèces</th><th>% CB</th>
     </tr></thead>
     <tbody>${dk.map(ds=>{
       const d=LD[ds];
@@ -647,20 +651,23 @@ function renderMonthDet(mk,M){
       const label=ds.slice(8)+'/'+ds.slice(5,7);
       return `<tr style="background:${isBest?'rgba(56,189,248,.05)':'transparent'}">
         <td style="font-weight:${isBest?700:400};color:${isBest?'var(--blue)':'var(--text)'}">${label}${isBest?' 🏆':''}</td>
+        <td><button onclick="openModal('${ds}')" style="background:none;border:1px solid var(--b);border-radius:6px;color:var(--muted);font-size:10px;padding:2px 7px;cursor:pointer;font-family:var(--f)">✏️</button></td>
         <td class="mn" style="color:${isBest?'var(--blue)':'var(--text)'};font-weight:${isBest?700:400}">${fmt(d.ca||0)}</td>
+        <td class="mn" style="color:var(--green)">${d.nbTx||'—'}</td>
+        <td class="mn" style="color:var(--muted);font-size:11px">${d.nbTx&&d.ca?fmtS((d.ca/d.nbTx)):'—'}</td>
         <td class="mn" style="color:var(--blue)">${fmt(d.cb||0)}</td>
         <td class="mn" style="color:var(--amber)">${fmt(d.esp||0)}</td>
         <td class="mn" style="color:var(--blue);font-size:11px">${pct(d.cb,d.ca)}</td>
-        <td class="mn" style="color:var(--amber);font-size:11px">${pct(d.esp,d.ca)}</td>
       </tr>`;
     }).join('')}</tbody>
     <tfoot><tr style="border-top:1px solid var(--b2)">
-      <td style="font-weight:700">TOTAL</td>
+      <td></td><td style="font-weight:700">TOTAL</td>
       <td class="mn" style="color:var(--green);font-weight:700">${fmt(m.ca)}</td>
+      <td class="mn" style="color:var(--green)">${m.nbTx||'—'}</td>
+      <td class="mn" style="color:var(--muted);font-size:11px">${m.nbTx&&m.ca?fmtS(m.ca/m.nbTx):'—'}</td>
       <td class="mn" style="color:var(--blue);font-weight:700">${fmt(m.cb)}</td>
       <td class="mn" style="color:var(--amber);font-weight:700">${fmt(m.esp)}</td>
       <td class="mn" style="color:var(--blue)">${pct(m.cb,m.ca)}</td>
-      <td class="mn" style="color:var(--amber)">${pct(m.esp,m.ca)}</td>
     </tr></tfoot>`;
 
   // ── Chart CA bar
@@ -750,6 +757,150 @@ function renderDetail(){
   const clients=Object.entries(all.c).sort((a,b)=>b[1]-a[1]).slice(0,15);
   $('tabl-cl').innerHTML=`<thead><tr><th style="text-align:left">#</th><th style="text-align:left">Client</th><th>CA</th></tr></thead><tbody>${clients.map(([n,v],i)=>`<tr><td class="mn" style="color:${i<3?'var(--amber)':'var(--muted)'};text-align:left">${i+1}</td><td>${n}</td><td class="mn" style="color:var(--blue)">${fmt(v)}</td></tr>`).join('')}</tbody>`;
 }
+
+// ═══════════════════════════════════════
+// AUTHENTIFICATION
+// ═══════════════════════════════════════
+const PWD_HASH='e0b44ff85e15124aa08c875f0bd34152d6b49cfe31154dbe57edd78ef9e3664d'; // SHA-256 de "SmileSmoke2026"
+const AUTH_KEY='ss_auth';
+
+async function sha256(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function tryLogin(){
+  const pwd=$('pwd-input').value;
+  if(!pwd) return;
+  const hash=await sha256(pwd);
+  if(hash===PWD_HASH){
+    const remember=$('remember-me')?.checked;
+    if(remember) localStorage.setItem(AUTH_KEY,'1');
+    else sessionStorage.setItem(AUTH_KEY,'1');
+    $('login-screen').style.display='none';
+    $('pwd-input').value='';
+    bootApp();
+  } else {
+    const box=$('login-screen').querySelector('.login-box');
+    $('login-err').textContent='Mot de passe incorrect';
+    box.classList.remove('login-shake');
+    void box.offsetWidth; // reflow
+    box.classList.add('login-shake');
+    $('pwd-input').select();
+    setTimeout(()=>$('login-err').textContent='',2500);
+  }
+}
+
+function toggleEye(){
+  const inp=$('pwd-input');
+  const isHidden=inp.type==='password';
+  inp.type=isHidden?'text':'password';
+  $('eye-btn').textContent=isHidden?'🙈':'👁';
+}
+
+function isAuthenticated(){
+  return localStorage.getItem(AUTH_KEY)==='1' || sessionStorage.getItem(AUTH_KEY)==='1';
+}
+
+function logout(){
+  localStorage.removeItem(AUTH_KEY);
+  sessionStorage.removeItem(AUTH_KEY);
+  location.reload();
+}
+
+// ═══════════════════════════════════════
+// SAISIE MANUELLE
+// ═══════════════════════════════════════
+let _editDs=null;
+
+function openModal(ds){
+  _editDs=ds||null;
+  const modal=$('modal-day');
+  const isEdit=!!ds&&!!LD[ds];
+  $('modal-title').textContent=isEdit?'Modifier le '+ds.slice(8)+'/'+ds.slice(5,7)+'/'+ds.slice(0,4):'Ajouter un jour';
+  $('modal-sub').textContent=isEdit?'Modification de la journée — synchronisé sur tous tes appareils':'Saisie manuelle — sera fusionné dans la base cloud';
+  $('btn-del-day').style.display=isEdit?'block':'none';
+  $('modal-err').style.display='none';
+  // Pre-fill
+  if(isEdit){
+    const d=LD[ds];
+    $('m-date').value=ds;
+    $('m-ca').value=(d.ca||0).toFixed(2);
+    $('m-cb').value=(d.cb||0).toFixed(2);
+    $('m-esp').value=(d.esp||0).toFixed(2);
+    $('m-tx').value=d.nbTx||0;
+  } else {
+    $('m-date').value=sMon?sMon+'-01':'';
+    $('m-ca').value='';$('m-cb').value='';$('m-esp').value='';$('m-tx').value='';
+  }
+  updateRecap();
+  modal.classList.add('open');
+}
+
+function closeModal(){
+  $('modal-day').classList.remove('open');
+  _editDs=null;
+}
+
+function updateRecap(){
+  const ca=+($('m-ca').value)||0,cb=+($('m-cb').value)||0,esp=+($('m-esp').value)||0,tx=+($('m-tx').value)||0;
+  const diff=ca-(cb+esp);
+  const parts=[];
+  if(ca) parts.push(`CA : <strong style="color:var(--blue)">${ca.toFixed(2)} €</strong>`);
+  if(cb||esp) parts.push(`CB : ${cb.toFixed(2)} € · Esp. : ${esp.toFixed(2)} €`);
+  if(Math.abs(diff)>0.01) parts.push(`<span style="color:var(--amber)">Diff. : ${diff.toFixed(2)} €</span>`);
+  if(tx&&ca) parts.push(`Panier moyen : ${(ca/tx).toFixed(2)} €`);
+  $('m-recap').innerHTML=parts.join('<br>')||'—';
+}
+
+// Live recap update
+['m-ca','m-cb','m-esp','m-tx'].forEach(id=>{const el=$(id);if(el)el.addEventListener('input',updateRecap);});
+
+async function saveDayManual(){
+  const ds=$('m-date').value;
+  if(!ds){$('modal-err').textContent='Sélectionne une date.';$('modal-err').style.display='block';return;}
+  const ca=+($('m-ca').value)||0;
+  const cb=+($('m-cb').value)||0;
+  const esp=+($('m-esp').value)||0;
+  const tx=+($('m-tx').value)||0;
+  if(!ca&&!cb&&!esp){$('modal-err').textContent='Saisis au moins le CA.';$('modal-err').style.display='block';return;}
+  const existing=LD[ds]||{};
+  const entry={
+    ca,cb,esp,nbTx:tx,
+    cats:existing.cats||{},
+    prods:existing.prods||{},
+    clients:existing.clients||{},
+  };
+  LD[ds]=entry;
+  sync('sy','Sauvegarde…');
+  try{
+    await db.collection('days').doc(ds).set(entry,{merge:true});
+    // Log
+    await saveImport({file:'Saisie manuelle',periode:ds.slice(8)+'/'+ds.slice(5,7)+'/'+ds.slice(0,4),newDates:_editDs?0:1,updDates:_editDs?1:0,nbDates:1,date:new Date().toISOString()});
+    sync('ok','Synchronisé');
+    closeModal();
+    renderAll();
+    // Re-select month if we're on monthly tab
+    if(sMon&&ds.startsWith(sMon)) renderMonthly();
+    toast(`✓ Journée ${ds.slice(8)}/${ds.slice(5,7)}/${ds.slice(0,4)} ${_editDs?'mise à jour':'ajoutée'}`,'var(--green)');
+  } catch(e){sync('ok','Connecté');$('modal-err').textContent='Erreur : '+e.message;$('modal-err').style.display='block';}
+}
+
+async function deleteDayManual(){
+  if(!_editDs||!confirm('Supprimer définitivement la journée '+_editDs+' ?'))return;
+  const ds=_editDs;
+  delete LD[ds];
+  sync('sy','Suppression…');
+  await db.collection('days').doc(ds).delete();
+  sync('ok','Synchronisé');
+  closeModal();
+  renderAll();
+  toast('Journée '+ds+' supprimée','var(--red)');
+}
+
+// Close on overlay click
+$('modal-day').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
 window.sDYear=y=>{sDY=y;renderDetail();};
 
 // ── RENDER IMPORTS ──
@@ -828,7 +979,12 @@ $('fi0').addEventListener('change',e=>{handleFile(e.target.files[0]);e.target.va
 
 (async()=>{
   const ok=await autoConnect();
-  if(ok){await loadRender();}
+  if(ok){
+    await loadRender();
+    setSyncStatus('ok','Synchronisé');
+  } else {
+    toast('❌ Impossible de se connecter à Firebase','var(--red)');
+  }
 })();
 </script>
 </body>
