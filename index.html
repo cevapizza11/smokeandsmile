@@ -251,6 +251,13 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
         <div class="cavail" id="cmp-avail"></div>
       </div>
       <div class="kgrid" id="cmp-kpis"></div>
+      <!-- COMPARABLE PERIOD -->
+      <div class="card" id="card-comparable">
+        <div class="ct">Periode comparable date a date</div>
+        <div id="comparable-info" style="font-size:11px;color:var(--muted);margin-bottom:14px;padding:8px 12px;background:rgba(56,189,248,.04);border-radius:8px;border:1px solid var(--b)"></div>
+        <div class="kgrid" id="cmp-comparable-kpis"></div>
+        <div style="overflow-x:auto"><table class="tbl" id="t-comparable"></table></div>
+      </div>
       <div class="card"><div class="ct">CA mensuel comparaison</div><div class="cw"><canvas id="c-cmp"></canvas></div></div>
       <div class="card"><div class="ct">Evolution % mois par mois</div><div class="cw" style="height:180px"><canvas id="c-cmpline"></canvas></div></div>
       <div class="card"><div class="ct">Tableau comparatif</div><div style="overflow-x:auto"><table class="tbl" id="t-cmp"></table></div></div>
@@ -803,6 +810,107 @@ function renderComparison(){
     pointBackgroundColor:evLine.map(function(v){ return v===null?'transparent':(+v>=0?'var(--green)':'var(--red)'); }),
     pointRadius:5,tension:.3,fill:true,spanGaps:false
   }]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){ return ctx.raw!=null?(+ctx.raw>=0?'+':'')+ctx.raw+'%':' —'; }}}},scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){ return v+'%'; }})}}}});
+
+  // ── COMPARABLE PERIOD ──
+  // Find dates that exist in Y2, then look for same MM-DD in Y1
+  var datesY2 = Object.keys(LD).filter(function(ds){ return ds.startsWith(y2); }).sort();
+  var datesY1 = Object.keys(LD).filter(function(ds){ return ds.startsWith(y1); }).sort();
+
+  // Map MM-DD -> ds for each year
+  var mapY1={}, mapY2={};
+  datesY1.forEach(function(ds){ mapY1[ds.slice(5)]=ds; }); // "05-02" -> "2025-05-02"
+  datesY2.forEach(function(ds){ mapY2[ds.slice(5)]=ds; }); // "05-02" -> "2026-05-02"
+
+  // Find common MM-DD keys
+  var commonKeys = Object.keys(mapY2).filter(function(k){ return mapY1[k]; }).sort();
+
+  var compEl=$('card-comparable'), infoEl=$('comparable-info');
+  if(!compEl) { /* skip */ }
+  else if(commonKeys.length===0){
+    compEl.style.display='block';
+    infoEl.innerHTML='Aucune date commune entre '+y1+' et '+y2+'. Importez des donnees sur les memes periodes.';
+    $('cmp-comparable-kpis').innerHTML='';
+    $('t-comparable').innerHTML='';
+  } else {
+    compEl.style.display='block';
+    var firstKey=commonKeys[0], lastKey=commonKeys[commonKeys.length-1];
+    var pY1=firstKey.slice(3,5)+'/'+firstKey.slice(0,2)+' > '+lastKey.slice(3,5)+'/'+lastKey.slice(0,2);
+
+    infoEl.innerHTML='<strong style="color:var(--text)">'+commonKeys.length+' jours en commun</strong>'
+      +' &mdash; Periode comparable : <span style="color:var(--blue)">'+y1+'</span> vs <span style="color:var(--amber)">'+y2+'</span>'
+      +' du <strong style="color:var(--text)">'+pY1+'</strong>'
+      +'<br><span style="color:var(--muted);font-size:10px">Seules les dates presentes dans les deux annees sont comparees pour une analyse pertinente.</span>';
+
+    // Compute totals on comparable dates only
+    var c1={ca:0,cb:0,esp:0,nbTx:0,n:0}, c2={ca:0,cb:0,esp:0,nbTx:0,n:0};
+    commonKeys.forEach(function(k){
+      var d1c=LD[mapY1[k]]||{}, d2c=LD[mapY2[k]]||{};
+      c1.ca+=d1c.ca||0; c1.cb+=d1c.cb||0; c1.esp+=d1c.esp||0; c1.nbTx+=d1c.nbTx||0; c1.n++;
+      c2.ca+=d2c.ca||0; c2.cb+=d2c.cb||0; c2.esp+=d2c.esp||0; c2.nbTx+=d2c.nbTx||0; c2.n++;
+    });
+
+    var eCA=dif(c2.ca,c1.ca), eTx=dif(c2.nbTx,c1.nbTx);
+    var ePan=dif(c2.nbTx?c2.ca/c2.nbTx:0, c1.nbTx?c1.ca/c1.nbTx:0);
+    var eMoy=dif(c2.n?c2.ca/c2.n:0, c1.n?c1.ca/c1.n:0);
+
+    $('cmp-comparable-kpis').innerHTML=[
+      {l:'CA '+y1+' (comparable)', v:fmt(c1.ca), s:c1.n+' jours', c:'var(--blue)'},
+      {l:'CA '+y2+' (comparable)', v:fmt(c2.ca), s:c2.n+' jours', c:'var(--amber)', b:eCA},
+      {l:'Evolution CA comparable', v:eCA!=null?(+eCA>=0?'+':'')+eCA+'%':'—', s:'a periode egale', c:(eCA!=null&&+eCA>=0)?'var(--green)':'var(--red)'},
+      {l:'Evolution transactions', v:eTx!=null?(+eTx>=0?'+':'')+eTx+'%':'—', s:(c1.nbTx||0)+' > '+(c2.nbTx||0)+' tx', c:(eTx!=null&&+eTx>=0)?'var(--green)':'var(--red)', b:eTx}
+    ].map(function(k){
+      return '<div class="kpi"><div class="kl">'+k.l+'</div><div class="kv" style="color:'+k.c+';font-size:15px">'+k.v+(k.b!=null?chip(k.b):'')+'</div><div class="ks">'+k.s+'</div></div>';
+    }).join('');
+
+    // Group common keys by month for the table
+    var months={};
+    commonKeys.forEach(function(k){
+      var mo=k.slice(0,2); // "05"
+      if(!months[mo]) months[mo]={c1:{ca:0,cb:0,esp:0,nbTx:0,n:0},c2:{ca:0,cb:0,esp:0,nbTx:0,n:0}};
+      var d1c=LD[mapY1[k]]||{}, d2c=LD[mapY2[k]]||{};
+      months[mo].c1.ca+=d1c.ca||0; months[mo].c1.cb+=d1c.cb||0; months[mo].c1.esp+=d1c.esp||0; months[mo].c1.nbTx+=d1c.nbTx||0; months[mo].c1.n++;
+      months[mo].c2.ca+=d2c.ca||0; months[mo].c2.cb+=d2c.cb||0; months[mo].c2.esp+=d2c.esp||0; months[mo].c2.nbTx+=d2c.nbTx||0; months[mo].c2.n++;
+    });
+
+    var moKeys=Object.keys(months).sort();
+    $('t-comparable').innerHTML='<thead><tr>'
+      +'<th class="tl">Mois</th><th>Jours</th>'
+      +'<th>CA '+y1+'</th><th>Moy/j '+y1+'</th><th>Tx '+y1+'</th>'
+      +'<th>CA '+y2+'</th><th>Moy/j '+y2+'</th><th>Tx '+y2+'</th>'
+      +'<th>Evol. CA</th><th>Evol. Tx</th>'
+      +'</tr></thead><tbody>'
+      +moKeys.map(function(mo){
+        var m=months[mo];
+        var moName=MO[+mo-1];
+        var evM=dif(m.c2.ca,m.c1.ca), evMTx=dif(m.c2.nbTx,m.c1.nbTx);
+        var colM=evM===null?'var(--muted)':(+evM>=0?'var(--green)':'var(--red)');
+        var colMTx=evMTx===null?'var(--muted)':(+evMTx>=0?'var(--green)':'var(--red)');
+        return '<tr>'
+          +'<td class="tl" style="font-weight:600">'+moName+'</td>'
+          +'<td class="mo" style="color:var(--muted)">'+m.c1.n+'j</td>'
+          +'<td class="mo" style="color:var(--blue)">'+fmtS(m.c1.ca)+'</td>'
+          +'<td class="mo" style="color:var(--muted);font-size:11px">'+( m.c1.n?fmtS(m.c1.ca/m.c1.n):'—')+'</td>'
+          +'<td class="mo" style="color:var(--green)">'+m.c1.nbTx+'</td>'
+          +'<td class="mo" style="color:var(--amber);font-weight:700">'+fmtS(m.c2.ca)+'</td>'
+          +'<td class="mo" style="color:var(--muted);font-size:11px">'+( m.c2.n?fmtS(m.c2.ca/m.c2.n):'—')+'</td>'
+          +'<td class="mo" style="color:var(--green)">'+m.c2.nbTx+'</td>'
+          +'<td class="mo" style="color:'+colM+';font-weight:700">'+( evM!=null?(+evM>=0?'+':'')+evM+'%':'—')+'</td>'
+          +'<td class="mo" style="color:'+colMTx+';font-weight:700">'+( evMTx!=null?(+evMTx>=0?'+':'')+evMTx+'%':'—')+'</td>'
+          +'</tr>';
+      }).join('')
+      +'</tbody><tfoot><tr style="border-top:1px solid var(--b2)">'
+      +'<td class="tl" style="font-weight:700">TOTAL</td>'
+      +'<td class="mo" style="color:var(--muted)">'+c1.n+'j</td>'
+      +'<td class="mo" style="color:var(--blue);font-weight:700">'+fmt(c1.ca)+'</td>'
+      +'<td class="mo" style="color:var(--muted)">'+( c1.n?fmtS(c1.ca/c1.n):'—')+'</td>'
+      +'<td class="mo" style="color:var(--green);font-weight:700">'+c1.nbTx+'</td>'
+      +'<td class="mo" style="color:var(--amber);font-weight:700">'+fmt(c2.ca)+'</td>'
+      +'<td class="mo" style="color:var(--muted)">'+( c2.n?fmtS(c2.ca/c2.n):'—')+'</td>'
+      +'<td class="mo" style="color:var(--green);font-weight:700">'+c2.nbTx+'</td>'
+      +'<td class="mo" style="color:'+(eCA!=null&&+eCA>=0?'var(--green)':'var(--red)')+';font-weight:700">'+( eCA!=null?(+eCA>=0?'+':'')+eCA+'%':'—')+'</td>'
+      +'<td class="mo" style="color:'+(eTx!=null&&+eTx>=0?'var(--green)':'var(--red)')+';font-weight:700">'+( eTx!=null?(+eTx>=0?'+':'')+eTx+'%':'—')+'</td>'
+      +'</tr></tfoot>';
+  }
 
   $('t-cmp').innerHTML='<thead><tr><th class="tl">Mois</th><th>CA '+y1+'</th><th>CA '+y2+'</th><th>Evol. CA</th><th>Tx '+y1+'</th><th>Tx '+y2+'</th><th>Evol. Tx</th></tr></thead><tbody>'
     +Array.from({length:12},function(_,i){
