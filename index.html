@@ -869,21 +869,19 @@ function initCmpDates(){
   onRangeChange();
 }
 
+var shortcutKeys = [];
 function buildShortcuts(){
   var allDates = Object.keys(LD).sort();
   if(!allDates.length) return;
   var el = document.getElementById('cmp-shortcuts');
   if(!el) return;
-
-  // Gather available months
   var months = {};
   allDates.forEach(function(ds){ months[ds.slice(0,7)]=true; });
-  var mkeys = Object.keys(months).sort().reverse().slice(0,8);
-
-  var html = mkeys.map(function(mk){
+  shortcutKeys = Object.keys(months).sort().reverse().slice(0,8);
+  var html = shortcutKeys.map(function(mk,i){
     var mo = MO_FULL[+mk.slice(5,7)-1];
     var yr = mk.slice(0,4);
-    return '<button class="cpill" onclick="applyShortcut(''+mk+'')" style="font-size:10px">'+mo.slice(0,3)+' '+yr+'</button>';
+    return '<button class="cpill" onclick="applyShortcut(shortcutKeys['+i+'])" style="font-size:10px">'+mo.slice(0,3)+' '+yr+'</button>';
   }).join('');
   el.innerHTML = html;
 }
