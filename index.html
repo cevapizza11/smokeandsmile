@@ -819,278 +819,311 @@ function selAYear(y){ selAY=y; renderAnnual(); }
 // =====================================================
 // RENDER COMPARISON
 // =====================================================
-function renderComparison(){
-  var M=byMonth(), Y=byYear(), years=getYears();
 
-  // Year input chips
-  $('cmp-avail').innerHTML='<span style="font-size:9px;color:var(--muted)">Disponibles :</span>'
-    +years.map(function(y,i){
-      return '<button class="cpill" onclick="quickPick(''+y+'')" style="color:'+YC_CSS[i]+'">'+y+'</button>';
-    }).join('');
+// Init date pickers with smart defaults
+function initCmpDates(){
+  var allDates = Object.keys(LD).sort();
+  if(!allDates.length) return;
+  var last  = allDates[allDates.length-1];
+  var first = allDates[0];
 
-  if(years.length<2){
-    document.getElementById('cmp-kpis').innerHTML='<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--muted);font-size:12px">Importez des donnees sur au moins 2 annees pour activer la comparaison.</div>';
-    dc('cmp'); dc('cmpline');
-    document.getElementById('t-cmp').innerHTML='';
-    var ccE=document.getElementById('card-comparable');
-    if(ccE) ccE.style.display='none';
-    return;
+  // Default P2 = last full month available
+  var p2to   = document.getElementById('p2-to');
+  var p2from = document.getElementById('p2-from');
+  var p1from = document.getElementById('p1-from');
+  var p1to   = document.getElementById('p1-to');
+  if(!p2to) return;
+
+  // Only set defaults if fields are empty
+  if(!p2to.value){
+    var lastYM = last.slice(0,7);
+    // find last day of that month in LD
+    var daysInLastMonth = allDates.filter(function(d){ return d.startsWith(lastYM); });
+    p2from.value = daysInLastMonth[0]||last;
+    p2to.value   = daysInLastMonth[daysInLastMonth.length-1]||last;
+  }
+  if(!p1to.value){
+    // Default P1 = same month previous year, or previous month
+    var p2y = +(document.getElementById('p2-from').value||last).slice(0,4);
+    var p2m = +(document.getElementById('p2-from').value||last).slice(5,7);
+    var p1y = p2y, p1m = p2m-1;
+    if(p1m<1){ p1m=12; p1y--; }
+    var p1key = p1y+'-'+String(p1m).padStart(2,'0');
+    var daysP1 = allDates.filter(function(d){ return d.startsWith(p1key); });
+    if(daysP1.length){
+      p1from.value = daysP1[0];
+      p1to.value   = daysP1[daysP1.length-1];
+    } else {
+      // Try same month -1 year
+      var p1keyY = (p2y-1)+'-'+String(p2m).padStart(2,'0');
+      var daysP1Y = allDates.filter(function(d){ return d.startsWith(p1keyY); });
+      if(daysP1Y.length){
+        p1from.value = daysP1Y[0];
+        p1to.value   = daysP1Y[daysP1Y.length-1];
+      }
+    }
   }
 
-  if(!cY1) cY1=years[years.length-2];
-  if(!cY2) cY2=years[years.length-1];
-  if(cY1===cY2) cY1=years.find(function(y){ return y!==cY2; })||years[0];
-
-  // Sync inputs without stealing focus
-  var inp1=document.getElementById('cmp-y1'), inp2=document.getElementById('cmp-y2');
-  if(inp1&&inp1!==document.activeElement) inp1.value=cY1;
-  if(inp2&&inp2!==document.activeElement) inp2.value=cY2;
-
-  var y1=cY1, y2=cY2;
-  var d1=Y[y1]||{ca:0,cb:0,esp:0,nbTx:0,nbDays:0};
-  var d2=Y[y2]||{ca:0,cb:0,esp:0,nbTx:0,nbDays:0};
-  var evCA=dif(d2.ca,d1.ca), evTx=dif(d2.nbTx,d1.nbTx);
-  var evMoy=dif(d2.nbDays?d2.ca/d2.nbDays:0, d1.nbDays?d1.ca/d1.nbDays:0);
-
-  // ── KPIs annuels
-  $('cmp-kpis').innerHTML=[
-    {l:'CA '+y2+' vs '+y1, v:fmt(d2.ca), s:y1+' : '+fmtS(d1.ca), c:'var(--amber)', b:evCA},
-    {l:'Evolution CA',     v:evCA!=null?(+evCA>=0?'+':'')+evCA+'%':'—', s:y1+' > '+y2, c:(evCA!=null&&+evCA>=0)?'var(--green)':'var(--red)'},
-    {l:'Tx '+y1+' / '+y2, v:(d1.nbTx||0)+' / '+(d2.nbTx||0), s:evTx!=null?(+evTx>=0?'+':'')+evTx+'% transactions':'—', c:'var(--green)', b:evTx},
-    {l:'Panier moyen',     v:(d1.nbTx?fmtS(d1.ca/d1.nbTx):'—')+' / '+(d2.nbTx?fmtS(d2.ca/d2.nbTx):'—'),
-     s:'evolution moy.', c:'var(--purple)'}
-  ].map(function(k){
-    return '<div class="kpi"><div class="kl">'+k.l+'</div><div class="kv" style="color:'+k.c+';font-size:'+(k.v.length>12?'13px':'17px')+'">'+k.v+(k.b!=null?chip(k.b):'')+'</div><div class="ks">'+k.s+'</div></div>';
-  }).join('');
-
-  // ── Charts annuels
-  var k1=[], k2=[];
-  for(var i=0;i<12;i++){
-    k1.push(y1+'-'+String(i+1).padStart(2,'0'));
-    k2.push(y2+'-'+String(i+1).padStart(2,'0'));
-  }
-  var v1=k1.map(function(mk){ return M[mk]?M[mk].ca:0; });
-  var v2=k2.map(function(mk){ return M[mk]?M[mk].ca:0; });
-
-  dc('cmp');
-  CH['cmp']=new Chart(document.getElementById('c-cmp').getContext('2d'),{type:'bar',data:{labels:MS,datasets:[
-    {label:y1,data:v1,backgroundColor:'rgba(56,189,248,.7)',borderRadius:4},
-    {label:y2,data:v2,backgroundColor:'rgba(245,158,11,.7)',borderRadius:4}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},
-    scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){ return v+'€'; }})}}}});
-
-  var evLine=[];
-  for(var j=0;j<12;j++){
-    evLine.push((v2[j]&&v1[j])?+dif(v2[j],v1[j]):null);
-  }
-  dc('cmpline');
-  CH['cmpline']=new Chart(document.getElementById('c-cmpline').getContext('2d'),{type:'line',data:{labels:MS,datasets:[{
-    label:'Evol % ('+y1+' > '+y2+')',
-    data:evLine,
-    borderColor:'var(--green)',backgroundColor:'rgba(74,222,128,.1)',
-    pointBackgroundColor:evLine.map(function(v){ return v===null?'transparent':(+v>=0?'var(--green)':'var(--red)'); }),
-    pointRadius:5,tension:.3,fill:true,spanGaps:false
-  }]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
-    tooltip:{callbacks:{label:function(ctx){ return ctx.raw!=null?(+ctx.raw>=0?'+':'')+ctx.raw+'%':' —'; }}}},
-    scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){ return v+'%'; }})}}}});
-
-  // ── Tableau annuel
-  var annRows='';
-  for(var mi=0;mi<12;mi++){
-    var mm1=M[k1[mi]], mm2=M[k2[mi]];
-    var eM=mm1&&mm2?dif(mm2.ca,mm1.ca):null;
-    var eMTx=mm1&&mm2&&mm1.nbTx&&mm2.nbTx?dif(mm2.nbTx,mm1.nbTx):null;
-    var colM=eM===null?'var(--muted)':(+eM>=0?'var(--green)':'var(--red)');
-    var colMTx=eMTx===null?'var(--muted)':(+eMTx>=0?'var(--green)':'var(--red)');
-    annRows+='<tr>'
-      +'<td class="tl" style="font-weight:600">'+MO[mi]+'</td>'
-      +'<td class="mo" style="color:var(--blue)">'+(mm1?fmtS(mm1.ca):'—')+'</td>'
-      +'<td class="mo" style="color:var(--amber)">'+(mm2?fmtS(mm2.ca):'—')+'</td>'
-      +'<td class="mo" style="color:'+colM+';font-weight:700">'+(eM!=null?(+eM>=0?'+':'')+eM+'%':'—')+'</td>'
-      +'<td class="mo" style="color:var(--green)">'+(mm1?mm1.nbTx:'—')+'</td>'
-      +'<td class="mo" style="color:var(--green)">'+(mm2?mm2.nbTx:'—')+'</td>'
-      +'<td class="mo" style="color:'+colMTx+';font-weight:700">'+(eMTx!=null?(+eMTx>=0?'+':'')+eMTx+'%':'—')+'</td>'
-      +'</tr>';
-  }
-  document.getElementById('t-cmp').innerHTML='<thead><tr>'
-    +'<th class="tl">Mois</th><th>CA '+y1+'</th><th>CA '+y2+'</th><th>Evol. CA</th>'
-    +'<th>Tx '+y1+'</th><th>Tx '+y2+'</th><th>Evol. Tx</th></tr></thead>'
-    +'<tbody>'+annRows+'</tbody>'
-    +'<tfoot><tr style="border-top:1px solid var(--b2)">'
-    +'<td class="tl" style="font-weight:700">TOTAL</td>'
-    +'<td class="mo" style="color:var(--blue);font-weight:700">'+fmt(d1.ca)+'</td>'
-    +'<td class="mo" style="color:var(--amber);font-weight:700">'+fmt(d2.ca)+'</td>'
-    +'<td class="mo" style="color:'+(evCA!=null&&+evCA>=0?'var(--green)':'var(--red)')+';font-weight:700">'+(evCA!=null?(+evCA>=0?'+':'')+evCA+'%':'—')+'</td>'
-    +'<td class="mo" style="color:var(--green);font-weight:700">'+(d1.nbTx||0)+'</td>'
-    +'<td class="mo" style="color:var(--green);font-weight:700">'+(d2.nbTx||0)+'</td>'
-    +'<td class="mo" style="color:'+(evTx!=null&&+evTx>=0?'var(--green)':'var(--red)')+';font-weight:700">'+(evTx!=null?(+evTx>=0?'+':'')+evTx+'%':'—')+'</td>'
-    +'</tr></tfoot>';
-
-  // ══ PERIODE COMPARABLE DATE A DATE ══
-  var cc=document.getElementById('card-comparable');
-  var infoEl=document.getElementById('comparable-info');
-  var kpisEl=document.getElementById('cmp-comparable-kpis');
-  var tblEl=document.getElementById('t-comparable');
-  if(!cc||!infoEl||!kpisEl||!tblEl){
-    console.warn('comparable elements not found:', !!cc, !!infoEl, !!kpisEl, !!tblEl);
-    return;
-  }
-  // Show loading state immediately
-  cc.style.display='block';
-  infoEl.innerHTML='<span style="color:var(--muted)">Calcul en cours...</span>';
-  kpisEl.innerHTML=''; tblEl.innerHTML='';
-
-  // Dates de chaque annee
-  var allDates=Object.keys(LD).sort();
-  var dY1=[], dY2=[];
-  allDates.forEach(function(ds){
-    if(ds.slice(0,4)===y1) dY1.push(ds);
-    if(ds.slice(0,4)===y2) dY2.push(ds);
-  });
-
-  // Map MM-DD => ds pour chaque annee
-  var mapY1={}, mapY2={};
-  dY1.forEach(function(ds){ mapY1[ds.slice(5)]=ds; });
-  dY2.forEach(function(ds){ mapY2[ds.slice(5)]=ds; });
-
-  // Cles communes
-  var commonKeys=[];
-  Object.keys(mapY2).forEach(function(k){ if(mapY1[k]) commonKeys.push(k); });
-  commonKeys.sort();
-
-  // (display already set above)
-  if(commonKeys.length===0){
-    infoEl.innerHTML='Aucune date commune entre '+y1+' et '+y2+'. Importez des donnees sur les memes periodes.';
-    kpisEl.innerHTML=''; tblEl.innerHTML=''; return;
-  }
-
-  // Totaux sur dates comparables
-  var totComp1={ca:0,cb:0,esp:0,nbTx:0,n:0};
-  var totComp2={ca:0,cb:0,esp:0,nbTx:0,n:0};
-  commonKeys.forEach(function(k){
-    var dc1=LD[mapY1[k]]||{}, dc2=LD[mapY2[k]]||{};
-    totComp1.ca+=dc1.ca||0; totComp1.cb+=dc1.cb||0; totComp1.esp+=dc1.esp||0; totComp1.nbTx+=dc1.nbTx||0; totComp1.n++;
-    totComp2.ca+=dc2.ca||0; totComp2.cb+=dc2.cb||0; totComp2.esp+=dc2.esp||0; totComp2.nbTx+=dc2.nbTx||0; totComp2.n++;
-  });
-
-  // Total reel Y2 (tous jours)
-  var totFullY2={ca:0,nbTx:0,n:0};
-  dY2.forEach(function(ds){ var d=LD[ds]||{}; totFullY2.ca+=d.ca||0; totFullY2.nbTx+=d.nbTx||0; totFullY2.n++; });
-
-  var pctCov=totFullY2.n>0?Math.round((totComp2.n/totFullY2.n)*100):0;
-  var compCA=dif(totComp2.ca,totComp1.ca);
-  var compTx=dif(totComp2.nbTx,totComp1.nbTx);
-  var firstK=commonKeys[0], lastK=commonKeys[commonKeys.length-1];
-  var periodeStr=firstK.slice(3,5)+'/'+firstK.slice(0,2)+' au '+lastK.slice(3,5)+'/'+lastK.slice(0,2);
-
-  infoEl.innerHTML=''
-    +'<div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">'
-    +'<div>'
-    +'<strong style="color:var(--text)">'+commonKeys.length+' jours comparables</strong>'
-    +' sur '+totFullY2.n+' jours en '+y2
-    +' <span style="background:rgba(56,189,248,.12);color:var(--blue);border-radius:6px;padding:1px 7px;font-size:10px;font-weight:700">'+pctCov+'% couvert</span>'
-    +'<br><span style="color:var(--muted);font-size:10px">Periode : '+periodeStr
-    +' — Seuls les jours presents dans les 2 annees sont compares.</span>'
-    +'</div>'
-    +'<div style="margin-left:auto;text-align:right;flex-shrink:0">'
-    +'<div style="font-size:10px;color:var(--muted)">CA TOTAL '+y2+'</div>'
-    +'<div style="font-family:var(--m);font-size:16px;font-weight:700;color:var(--amber)">'+fmt(totFullY2.ca)+'</div>'
-    +'<div style="font-size:10px;color:var(--muted);margin-top:2px">CA comparable</div>'
-    +'<div style="font-family:var(--m);font-size:13px;color:var(--blue)">'+fmt(totComp2.ca)+'</div>'
-    +'</div>'
-    +'</div>';
-
-  kpisEl.innerHTML=[
-    {l:'CA '+y1+' comparable', v:fmt(totComp1.ca), s:totComp1.n+' jours', c:'var(--blue)'},
-    {l:'CA '+y2+' comparable', v:fmt(totComp2.ca), s:totComp2.n+' jours', c:'var(--amber)', b:compCA},
-    {l:'Evol. CA a periode egale', v:compCA!=null?(+compCA>=0?'+':'')+compCA+'%':'—', s:'sur jours communs', c:(compCA!=null&&+compCA>=0)?'var(--green)':'var(--red)'},
-    {l:'Evol. transactions', v:compTx!=null?(+compTx>=0?'+':'')+compTx+'%':'—', s:totComp1.nbTx+' > '+totComp2.nbTx+' tx', c:(compTx!=null&&+compTx>=0)?'var(--green)':'var(--red)'}
-  ].map(function(k){
-    return '<div class="kpi"><div class="kl">'+k.l+'</div><div class="kv" style="color:'+k.c+'">'+k.v+(k.b!=null?chip(k.b):'')+'</div><div class="ks">'+k.s+'</div></div>';
-  }).join('');
-
-  // Tableau par mois — comparaison comparable
-  // Totaux mensuels sur dates communes seulement
-  var moComp={};
-  commonKeys.forEach(function(k){
-    var mo=k.slice(0,2);
-    if(!moComp[mo]) moComp[mo]={c1:{ca:0,nbTx:0,n:0},c2:{ca:0,nbTx:0,n:0},full2:{ca:0,n:0}};
-    var dc1=LD[mapY1[k]]||{}, dc2=LD[mapY2[k]]||{};
-    moComp[mo].c1.ca+=dc1.ca||0; moComp[mo].c1.nbTx+=dc1.nbTx||0; moComp[mo].c1.n++;
-    moComp[mo].c2.ca+=dc2.ca||0; moComp[mo].c2.nbTx+=dc2.nbTx||0; moComp[mo].c2.n++;
-  });
-  // Ajouter le CA total reel par mois pour Y2
-  dY2.forEach(function(ds){
-    var mo=ds.slice(5,7);
-    if(moComp[mo]){ var d=LD[ds]||{}; moComp[mo].full2.ca+=d.ca||0; moComp[mo].full2.n++; }
-  });
-
-  var moKeys=Object.keys(moComp).sort();
-  var compRows='';
-  moKeys.forEach(function(mo){
-    var m=moComp[mo];
-    var eMo=dif(m.c2.ca,m.c1.ca);
-    var eMoTx=m.c1.nbTx&&m.c2.nbTx?dif(m.c2.nbTx,m.c1.nbTx):null;
-    var colMo=eMo===null?'var(--muted)':(+eMo>=0?'var(--green)':'var(--red)');
-    var colMoTx=eMoTx===null?'var(--muted)':(+eMoTx>=0?'var(--green)':'var(--red)');
-    var diffCA=m.full2.ca-m.c2.ca;
-    compRows+='<tr>'
-      +'<td class="tl" style="font-weight:600">'+MO[+mo-1]+'</td>'
-      +'<td class="mo" style="color:var(--muted)">'+m.c1.n+'j / '+m.full2.n+'j</td>'
-      +'<td class="mo" style="color:var(--blue)">'+fmtS(m.c1.ca)+'</td>'
-      +'<td class="mo" style="color:var(--muted);font-size:11px">'+(m.c1.n?fmtS(m.c1.ca/m.c1.n):'—')+'</td>'
-      +'<td class="mo" style="color:var(--green)">'+m.c1.nbTx+'</td>'
-      +'<td class="mo" style="color:var(--blue);border-left:2px solid rgba(245,158,11,.25)">'+fmtS(m.c2.ca)+'</td>'
-      +'<td class="mo" style="color:var(--amber);font-weight:700">'+fmtS(m.full2.ca)+'</td>'
-      +'<td class="mo" style="color:var(--muted);font-size:11px">'+(diffCA>0.01?'+'+fmtS(diffCA):(diffCA<-0.01?fmtS(diffCA):'='))+'</td>'
-      +'<td class="mo" style="color:var(--green)">'+m.c2.nbTx+'</td>'
-      +'<td class="mo" style="color:'+colMo+';font-weight:700">'+(eMo!=null?(+eMo>=0?'+':'')+eMo+'%':'—')+'</td>'
-      +'<td class="mo" style="color:'+colMoTx+';font-weight:700">'+(eMoTx!=null?(+eMoTx>=0?'+':'')+eMoTx+'%':'—')+'</td>'
-      +'</tr>';
-  });
-
-  tblEl.innerHTML='<thead><tr>'
-    +'<th class="tl">Mois</th>'
-    +'<th title="Jours communs / Total Y2">Jours</th>'
-    +'<th>CA '+y1+'</th><th>Moy/j '+y1+'</th><th>Tx '+y1+'</th>'
-    +'<th style="border-left:2px solid rgba(245,158,11,.25)">CA '+y2+' (comp.)</th>'
-    +'<th>CA '+y2+' TOTAL</th><th>Diff.</th>'
-    +'<th>Tx '+y2+'</th>'
-    +'<th>Evol. CA</th><th>Evol. Tx</th>'
-    +'</tr></thead>'
-    +'<tbody>'+compRows+'</tbody>'
-    +'<tfoot><tr style="border-top:1px solid var(--b2)">'
-    +'<td class="tl" style="font-weight:700">TOTAL</td>'
-    +'<td class="mo" style="color:var(--muted)">'+totComp1.n+'j / '+totFullY2.n+'j</td>'
-    +'<td class="mo" style="color:var(--blue);font-weight:700">'+fmt(totComp1.ca)+'</td>'
-    +'<td class="mo" style="color:var(--muted)">'+(totComp1.n?fmtS(totComp1.ca/totComp1.n):'—')+'</td>'
-    +'<td class="mo" style="color:var(--green);font-weight:700">'+totComp1.nbTx+'</td>'
-    +'<td class="mo" style="color:var(--blue);font-weight:700;border-left:2px solid rgba(245,158,11,.25)">'+fmt(totComp2.ca)+'</td>'
-    +'<td class="mo" style="color:var(--amber);font-weight:700">'+fmt(totFullY2.ca)+'</td>'
-    +'<td class="mo" style="color:var(--muted)">'+(totFullY2.ca-totComp2.ca>0.01?'+'+fmtS(totFullY2.ca-totComp2.ca):'=')+'</td>'
-    +'<td class="mo" style="color:var(--green);font-weight:700">'+totComp2.nbTx+'</td>'
-    +'<td class="mo" style="color:'+(compCA!=null&&+compCA>=0?'var(--green)':'var(--red)')+';font-weight:700">'+(compCA!=null?(+compCA>=0?'+':'')+compCA+'%':'—')+'</td>'
-    +'<td class="mo" style="color:'+(compTx!=null&&+compTx>=0?'var(--green)':'var(--red)')+';font-weight:700">'+(compTx!=null?(+compTx>=0?'+':'')+compTx+'%':'—')+'</td>'
-    +'</tr></tfoot>';
+  // Build shortcut buttons
+  buildShortcuts();
+  onRangeChange();
 }
 
-function quickPick(y){
-  var years=getYears();
-  if(!cY1||cY1===cY2){ cY1=y; cY2=years.find(function(x){ return x!==y; })||y; }
-  else { cY2=y; }
-  var i1=document.getElementById('cmp-y1'), i2=document.getElementById('cmp-y2');
-  if(i1) i1.value=cY1; if(i2) i2.value=cY2;
-  renderComparison();
+function buildShortcuts(){
+  var allDates = Object.keys(LD).sort();
+  if(!allDates.length) return;
+  var el = document.getElementById('cmp-shortcuts');
+  if(!el) return;
+
+  // Gather available months
+  var months = {};
+  allDates.forEach(function(ds){ months[ds.slice(0,7)]=true; });
+  var mkeys = Object.keys(months).sort().reverse().slice(0,8);
+
+  var html = mkeys.map(function(mk){
+    var mo = MO_FULL[+mk.slice(5,7)-1];
+    var yr = mk.slice(0,4);
+    return '<button class="cpill" onclick="applyShortcut(''+mk+'')" style="font-size:10px">'+mo.slice(0,3)+' '+yr+'</button>';
+  }).join('');
+  el.innerHTML = html;
+}
+
+function applyShortcut(mk){
+  var allDates = Object.keys(LD).sort();
+  var days = allDates.filter(function(d){ return d.startsWith(mk); });
+  if(!days.length) return;
+
+  // Set as P2
+  var p2f = document.getElementById('p2-from');
+  var p2t = document.getElementById('p2-to');
+  if(p2f) p2f.value = days[0];
+  if(p2t) p2t.value = days[days.length-1];
+
+  // Find same month previous year or previous month for P1
+  var yr = +mk.slice(0,4), mo = +mk.slice(5,7);
+  var p1key1 = (yr-1)+'-'+String(mo).padStart(2,'0'); // meme mois annee precedente
+  var p1key2 = yr+'-'+String(mo-1>0?mo-1:12).padStart(2,'0'); // mois precedent
+  if(mo-1<1) p1key2=(yr-1)+'-12';
+
+  var days1 = allDates.filter(function(d){ return d.startsWith(p1key1); });
+  var days2 = allDates.filter(function(d){ return d.startsWith(p1key2); });
+  var chosen = days1.length ? days1 : days2;
+
+  var p1f = document.getElementById('p1-from');
+  var p1t = document.getElementById('p1-to');
+  if(chosen.length && p1f && p1t){
+    p1f.value = chosen[0];
+    p1t.value = chosen[chosen.length-1];
+  }
+  onRangeChange();
 }
 
 var cmpTimer;
-function onCmpInput(){
+function onRangeChange(){
   clearTimeout(cmpTimer);
-  cmpTimer=setTimeout(function(){
-    var i1=document.getElementById('cmp-y1'), i2=document.getElementById('cmp-y2');
-    var v1=(i1||{}).value||'', v2=(i2||{}).value||'';
-    if(v1.length===4&&v2.length===4&&v1!==v2){ cY1=v1; cY2=v2; renderComparison(); }
-  },500);
+  cmpTimer = setTimeout(function(){ renderComparison(); }, 200);
+}
+
+function getDatesInRange(from, to){
+  if(!from||!to) return [];
+  return Object.keys(LD).filter(function(ds){ return ds>=from && ds<=to; }).sort();
+}
+
+function computeRangeTotals(dates){
+  var r={ca:0,cb:0,esp:0,nbTx:0,n:dates.length,cats:{},prods:{}};
+  dates.forEach(function(ds){
+    var d=LD[ds]||{};
+    r.ca+=d.ca||0; r.cb+=d.cb||0; r.esp+=d.esp||0; r.nbTx+=d.nbTx||0;
+    Object.keys(d.cats||{}).forEach(function(k){ r.cats[k]=(r.cats[k]||0)+d.cats[k]; });
+    Object.keys(d.prods||{}).forEach(function(k){
+      if(!r.prods[k]) r.prods[k]={ca:0,qte:0};
+      r.prods[k].ca+=(d.prods[k]&&d.prods[k].ca)||0;
+      r.prods[k].qte+=(d.prods[k]&&d.prods[k].qte)||0;
+    });
+  });
+  return r;
+}
+
+function formatRange(from,to){
+  if(!from||!to) return '—';
+  var f=fmtDs(from), t=fmtDs(to);
+  return f===t ? f : f+' au '+t;
+}
+
+function renderComparison(){
+  var p1f=(document.getElementById('p1-from')||{}).value||'';
+  var p1t=(document.getElementById('p1-to')||{}).value||'';
+  var p2f=(document.getElementById('p2-from')||{}).value||'';
+  var p2t=(document.getElementById('p2-to')||{}).value||'';
+
+  var infoEl = document.getElementById('cmp-range-info');
+  var resEl  = document.getElementById('cmp-results');
+  var empEl  = document.getElementById('cmp-empty');
+
+  if(!p1f||!p1t||!p2f||!p2t){
+    if(resEl) resEl.style.display='none';
+    if(empEl) empEl.style.display='block';
+    if(infoEl) infoEl.textContent='';
+    return;
+  }
+
+  var dates1 = getDatesInRange(p1f,p1t);
+  var dates2 = getDatesInRange(p2f,p2t);
+
+  if(infoEl){
+    infoEl.innerHTML='<span style="color:var(--blue)">Periode 1</span> : '
+      +formatRange(p1f,p1t)+' — <strong style="color:var(--blue)">'+dates1.length+' jours</strong>'
+      +'&nbsp;&nbsp;|&nbsp;&nbsp;<span style="color:var(--amber)">Periode 2</span> : '
+      +formatRange(p2f,p2t)+' — <strong style="color:var(--amber)">'+dates2.length+' jours</strong>';
+  }
+
+  if(!dates1.length&&!dates2.length){
+    if(resEl) resEl.style.display='none';
+    if(empEl){ empEl.style.display='block'; empEl.textContent='Aucune donnee sur ces periodes. Importez vos fichiers.'; }
+    return;
+  }
+
+  if(resEl) resEl.style.display='block';
+  if(empEl) empEl.style.display='none';
+
+  var t1=computeRangeTotals(dates1);
+  var t2=computeRangeTotals(dates2);
+
+  var evCA  = dif(t2.ca,  t1.ca);
+  var evTx  = dif(t2.nbTx,t1.nbTx);
+  var evMoy1= t1.n?t1.ca/t1.n:0, evMoy2=t2.n?t2.ca/t2.n:0;
+  var evMoy = dif(evMoy2, evMoy1);
+  var pan1  = t1.nbTx?t1.ca/t1.nbTx:0, pan2=t2.nbTx?t2.ca/t2.nbTx:0;
+  var evPan = dif(pan2,pan1);
+
+  // ── KPIs
+  document.getElementById('cmp-kpis').innerHTML=[
+    {l:'CA Periode 1 ('+dates1.length+'j)',  v:fmt(t1.ca),  s:t1.nbTx+' tx — moy. '+fmtS(evMoy1)+'/j', c:'var(--blue)'},
+    {l:'CA Periode 2 ('+dates2.length+'j)',  v:fmt(t2.ca),  s:t2.nbTx+' tx — moy. '+fmtS(evMoy2)+'/j', c:'var(--amber)', b:evCA},
+    {l:'Evolution CA',     v:evCA!=null?(+evCA>=0?'+':'')+evCA+'%':'—',  s:'P1 > P2', c:(evCA!=null&&+evCA>=0)?'var(--green)':'var(--red)'},
+    {l:'Evol. transactions',v:evTx!=null?(+evTx>=0?'+':'')+evTx+'%':'—', s:(t1.nbTx||0)+' > '+(t2.nbTx||0)+' tx', c:(evTx!=null&&+evTx>=0)?'var(--green)':'var(--red)'},
+  ].map(function(k){
+    return '<div class="kpi"><div class="kl">'+k.l+'</div>'
+      +'<div class="kv" style="color:'+k.c+';font-size:'+(k.v.length>12?'13px':'17px')+'">'+k.v+(k.b!=null?chip(k.b):'')+'</div>'
+      +'<div class="ks">'+k.s+'</div></div>';
+  }).join('');
+
+  // ── Bar chart : CA par jour superpose
+  // On normalise par l'index du jour (jour 1, jour 2...) pour comparer
+  var maxLen = Math.max(dates1.length, dates2.length, 1);
+  var labels=[], v1arr=[], v2arr=[];
+  for(var i=0;i<maxLen;i++){
+    labels.push('J'+(i+1));
+    v1arr.push(dates1[i]?(LD[dates1[i]]&&LD[dates1[i]].ca)||0:null);
+    v2arr.push(dates2[i]?(LD[dates2[i]]&&LD[dates2[i]].ca)||0:null);
+  }
+  dc('cmp');
+  CH['cmp']=new Chart(document.getElementById('c-cmp').getContext('2d'),{type:'bar',
+    data:{labels:labels,datasets:[
+      {label:'P1 '+formatRange(p1f,p1t),data:v1arr,backgroundColor:'rgba(56,189,248,.65)',borderRadius:3},
+      {label:'P2 '+formatRange(p2f,p2t),data:v2arr,backgroundColor:'rgba(245,158,11,.65)',borderRadius:3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},
+      scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){ return v+'€'; }})}}}
+  });
+
+  // ── Categories chart : comparaison top 6 categories
+  var allCats={};
+  Object.keys(t1.cats).forEach(function(k){ if(!allCats[k]) allCats[k]=0; allCats[k]+=t1.cats[k]; });
+  Object.keys(t2.cats).forEach(function(k){ if(!allCats[k]) allCats[k]=0; allCats[k]+=t2.cats[k]; });
+  var topCats=Object.keys(allCats).sort(function(a,b){ return allCats[b]-allCats[a]; }).slice(0,6);
+  var cats1=topCats.map(function(k){ return t1.cats[k]||0; });
+  var cats2=topCats.map(function(k){ return t2.cats[k]||0; });
+  var catLabels=topCats.map(function(k){ return k.length>14?k.slice(0,13)+'...':k; });
+
+  dc('cmpline');
+  CH['cmpline']=new Chart(document.getElementById('c-cmpline').getContext('2d'),{type:'bar',
+    data:{labels:catLabels,datasets:[
+      {label:'P1',data:cats1,backgroundColor:'rgba(56,189,248,.7)',borderRadius:3},
+      {label:'P2',data:cats2,backgroundColor:'rgba(245,158,11,.7)',borderRadius:3}
+    ]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},
+      scales:{x:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){ return v+'€'; }})},y:{grid:{display:false},ticks:TICK}}}
+  });
+
+  // ── Tableau comparatif semaine par semaine (ou jour par jour si < 14j)
+  var useWeeks = Math.max(dates1.length,dates2.length)>14;
+  var rows='', thead='';
+
+  if(!useWeeks){
+    // Tableau jour par jour
+    thead='<tr><th class="tl">Jour</th>'
+      +'<th>Date P1</th><th>CA P1</th><th>Tx P1</th>'
+      +'<th>Date P2</th><th>CA P2</th><th>Tx P2</th>'
+      +'<th>Evol. CA</th></tr>';
+    for(var ri=0;ri<maxLen;ri++){
+      var ds1=dates1[ri]||'', ds2=dates2[ri]||'';
+      var dd1=LD[ds1]||{}, dd2=LD[ds2]||{};
+      var eRow=ds1&&ds2?dif(dd2.ca||0,dd1.ca||0):null;
+      var cRow=eRow===null?'var(--muted)':(+eRow>=0?'var(--green)':'var(--red)');
+      rows+='<tr>'
+        +'<td class="tl mo" style="color:var(--muted)">J'+(ri+1)+'</td>'
+        +'<td class="mo" style="color:var(--blue);font-size:11px">'+(ds1?fmtDs(ds1):'—')+'</td>'
+        +'<td class="mo" style="color:var(--blue)">'+(ds1?fmtS(dd1.ca||0):'—')+'</td>'
+        +'<td class="mo" style="color:var(--green)">'+(ds1?dd1.nbTx||0:'—')+'</td>'
+        +'<td class="mo" style="color:var(--amber);font-size:11px">'+(ds2?fmtDs(ds2):'—')+'</td>'
+        +'<td class="mo" style="color:var(--amber)">'+(ds2?fmtS(dd2.ca||0):'—')+'</td>'
+        +'<td class="mo" style="color:var(--green)">'+(ds2?dd2.nbTx||0:'—')+'</td>'
+        +'<td class="mo" style="color:'+cRow+';font-weight:700">'+(eRow!=null?(+eRow>=0?'+':'')+eRow+'%':'—')+'</td>'
+        +'</tr>';
+    }
+  } else {
+    // Tableau par semaine
+    thead='<tr><th class="tl">Semaine</th>'
+      +'<th>CA P1</th><th>Jours P1</th><th>Tx P1</th>'
+      +'<th>CA P2</th><th>Jours P2</th><th>Tx P2</th>'
+      +'<th>Evol. CA</th></tr>';
+    var wSize=7;
+    var nWeeks=Math.ceil(maxLen/wSize);
+    for(var wi=0;wi<nWeeks;wi++){
+      var w1dates=dates1.slice(wi*wSize,(wi+1)*wSize);
+      var w2dates=dates2.slice(wi*wSize,(wi+1)*wSize);
+      var w1=computeRangeTotals(w1dates), w2=computeRangeTotals(w2dates);
+      var eW=w1.ca&&w2.ca?dif(w2.ca,w1.ca):null;
+      var cW=eW===null?'var(--muted)':(+eW>=0?'var(--green)':'var(--red)');
+      rows+='<tr>'
+        +'<td class="tl" style="font-weight:600">S'+(wi+1)+'</td>'
+        +'<td class="mo" style="color:var(--blue)">'+(w1.n?fmtS(w1.ca):'—')+'</td>'
+        +'<td class="mo" style="color:var(--muted)">'+w1.n+'j</td>'
+        +'<td class="mo" style="color:var(--green)">'+w1.nbTx+'</td>'
+        +'<td class="mo" style="color:var(--amber)">'+(w2.n?fmtS(w2.ca):'—')+'</td>'
+        +'<td class="mo" style="color:var(--muted)">'+w2.n+'j</td>'
+        +'<td class="mo" style="color:var(--green)">'+w2.nbTx+'</td>'
+        +'<td class="mo" style="color:'+cW+';font-weight:700">'+(eW!=null?(+eW>=0?'+':'')+eW+'%':'—')+'</td>'
+        +'</tr>';
+    }
+  }
+
+  // Total row
+  var eTotal=dif(t2.ca,t1.ca);
+  var cTotal=eTotal===null?'var(--muted)':(+eTotal>=0?'var(--green)':'var(--red)');
+  rows+='<tr style="border-top:1px solid var(--b2)">'
+    +'<td class="tl" style="font-weight:700">TOTAL</td>'
+    +'<td class="mo" style="color:var(--blue);font-weight:700">'+fmt(t1.ca)+'</td>'
+    +'<td class="mo" style="color:var(--muted)">'+t1.n+'j</td>'
+    +'<td class="mo" style="color:var(--green);font-weight:700">'+t1.nbTx+'</td>'
+    +'<td class="mo" style="color:var(--amber);font-weight:700">'+fmt(t2.ca)+'</td>'
+    +'<td class="mo" style="color:var(--muted)">'+t2.n+'j</td>'
+    +'<td class="mo" style="color:var(--green);font-weight:700">'+t2.nbTx+'</td>'
+    +'<td class="mo" style="color:'+cTotal+';font-weight:700">'+(eTotal!=null?(+eTotal>=0?'+':'')+eTotal+'%':'—')+'</td>'
+    +'</tr>';
+
+  document.getElementById('t-cmp').innerHTML='<thead>'+thead+'</thead><tbody>'+rows+'</tbody>';
+}
+
+function quickPick(y){} // kept for compat
+
+var cmpTimerY;
+function onCmpInput(){
+  clearTimeout(cmpTimerY);
+  cmpTimerY=setTimeout(function(){ renderComparison(); },500);
 }
 
 // =====================================================
@@ -1377,7 +1410,7 @@ document.querySelectorAll('.tab').forEach(function(btn){
     if(el) el.classList.add('on');
     var pg=btn.getAttribute('data-p');
     if(pg==='annual')   renderAnnual();
-    if(pg==='compare')  renderComparison();
+    if(pg==='compare')  { initCmpDates(); }
     if(pg==='monthly')  renderMonthly();
     if(pg==='detail')   renderDetail();
     if(pg==='imports')  renderImports();
@@ -1409,7 +1442,7 @@ function renderAll(){
     if(activeTab){
       var pg=activeTab.getAttribute('data-p');
       if(pg==='annual')   { try{ renderAnnual(); }catch(e){ console.error(e); } }
-      if(pg==='compare')  { try{ renderComparison(); }catch(e){ console.error(e); } }
+      if(pg==='compare')  { try{ initCmpDates(); }catch(e){ console.error(e); } }
       if(pg==='monthly')  { try{ renderMonthly(); }catch(e){ console.error(e); } }
       if(pg==='detail')   { try{ renderDetail(); }catch(e){ console.error(e); } }
       if(pg==='imports')  { try{ renderImports(); }catch(e){ console.error(e); } }
