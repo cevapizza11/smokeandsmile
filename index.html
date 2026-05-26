@@ -278,7 +278,7 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
       </div>
       <div class="kgrid" id="cmp-kpis"></div>
       <!-- COMPARABLE PERIOD -->
-      <div class="card" id="card-comparable">
+      <div class="card" id="card-comparable" style="display:none">
         <div class="ct">Periode comparable date a date</div>
         <div id="comparable-info" style="font-size:11px;color:var(--muted);margin-bottom:14px;padding:8px 12px;background:rgba(56,189,248,.04);border-radius:8px;border:1px solid var(--b)"></div>
         <div class="kgrid" id="cmp-comparable-kpis"></div>
@@ -829,11 +829,11 @@ function renderComparison(){
     }).join('');
 
   if(years.length<2){
-    $('cmp-kpis').innerHTML='<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--muted);font-size:12px">Importez au moins 2 annees pour comparer.</div>';
+    document.getElementById('cmp-kpis').innerHTML='<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--muted);font-size:12px">Importez des donnees sur au moins 2 annees pour activer la comparaison.</div>';
     dc('cmp'); dc('cmpline');
-    $('t-cmp').innerHTML='';
-    var cc=document.getElementById('card-comparable');
-    if(cc) cc.style.display='none';
+    document.getElementById('t-cmp').innerHTML='';
+    var ccE=document.getElementById('card-comparable');
+    if(ccE) ccE.style.display='none';
     return;
   }
 
@@ -931,7 +931,14 @@ function renderComparison(){
   var infoEl=document.getElementById('comparable-info');
   var kpisEl=document.getElementById('cmp-comparable-kpis');
   var tblEl=document.getElementById('t-comparable');
-  if(!cc||!infoEl||!kpisEl||!tblEl) return;
+  if(!cc||!infoEl||!kpisEl||!tblEl){
+    console.warn('comparable elements not found:', !!cc, !!infoEl, !!kpisEl, !!tblEl);
+    return;
+  }
+  // Show loading state immediately
+  cc.style.display='block';
+  infoEl.innerHTML='<span style="color:var(--muted)">Calcul en cours...</span>';
+  kpisEl.innerHTML=''; tblEl.innerHTML='';
 
   // Dates de chaque annee
   var allDates=Object.keys(LD).sort();
@@ -951,8 +958,7 @@ function renderComparison(){
   Object.keys(mapY2).forEach(function(k){ if(mapY1[k]) commonKeys.push(k); });
   commonKeys.sort();
 
-  cc.style.display='block';
-
+  // (display already set above)
   if(commonKeys.length===0){
     infoEl.innerHTML='Aucune date commune entre '+y1+' et '+y2+'. Importez des donnees sur les memes periodes.';
     kpisEl.innerHTML=''; tblEl.innerHTML=''; return;
