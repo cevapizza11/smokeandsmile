@@ -836,10 +836,27 @@ function renderComparison(){
     var firstKey=commonKeys[0], lastKey=commonKeys[commonKeys.length-1];
     var pY1=firstKey.slice(3,5)+'/'+firstKey.slice(0,2)+' > '+lastKey.slice(3,5)+'/'+lastKey.slice(0,2);
 
-    infoEl.innerHTML='<strong style="color:var(--text)">'+commonKeys.length+' jours en commun</strong>'
-      +' &mdash; Periode comparable : <span style="color:var(--blue)">'+y1+'</span> vs <span style="color:var(--amber)">'+y2+'</span>'
-      +' du <strong style="color:var(--text)">'+pY1+'</strong>'
-      +'<br><span style="color:var(--muted);font-size:10px">Seules les dates presentes dans les deux annees sont comparees pour une analyse pertinente.</span>';
+    // Compute full Y2 totals for the banner comparison
+    var fullY2={ca:0,nbTx:0,n:0};
+    datesY2.forEach(function(ds){ var d=LD[ds]||{}; fullY2.ca+=d.ca||0; fullY2.nbTx+=d.nbTx||0; fullY2.n++; });
+    var pctCovered=fullY2.n>0?Math.round((c2.n/fullY2.n)*100):0;
+
+    infoEl.innerHTML=''
+      +'<div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap">'
+      +'<div>'
+      +'<strong style="color:var(--text)">'+commonKeys.length+' jours comparables</strong>'
+      +' sur '+fullY2.n+' jours en '+y2
+      +' <span style="background:rgba(56,189,248,.12);color:var(--blue);border-radius:6px;padding:1px 7px;font-size:10px;font-weight:700">'+pctCovered+'% couvert</span>'
+      +'<br><span style="color:var(--muted);font-size:10px">Seuls les jours presents dans les 2 annees sont compares. '
+      +'Si un jour existe en '+y2+' mais pas en '+y1+', il est exclu du calcul.</span>'
+      +'</div>'
+      +'<div style="margin-left:auto;text-align:right;flex-shrink:0">'
+      +'<div style="font-size:10px;color:var(--muted)">CA TOTAL '+y2+' (tous jours)</div>'
+      +'<div style="font-family:var(--m);font-size:16px;font-weight:700;color:var(--amber)">'+fmt(fullY2.ca)+'</div>'
+      +'<div style="font-size:10px;color:var(--muted);margin-top:2px">CA comparable '+y2+'</div>'
+      +'<div style="font-family:var(--m);font-size:14px;font-weight:700;color:var(--blue)">'+fmt(c2.ca)+'</div>'
+      +'</div>'
+      +'</div>';
 
     // Compute totals on comparable dates only
     var c1={ca:0,cb:0,esp:0,nbTx:0,n:0}, c2={ca:0,cb:0,esp:0,nbTx:0,n:0};
@@ -873,10 +890,23 @@ function renderComparison(){
     });
 
     var moKeys=Object.keys(months).sort();
+    // Compute full monthly totals for Y2
+    var fullMonthY2={};
+    datesY2.forEach(function(ds){
+      var mo=ds.slice(5,7);
+      if(!fullMonthY2[mo]) fullMonthY2[mo]={ca:0,nbTx:0,n:0};
+      var d=LD[ds]||{};
+      fullMonthY2[mo].ca+=d.ca||0; fullMonthY2[mo].nbTx+=d.nbTx||0; fullMonthY2[mo].n++;
+    });
+
     $('t-comparable').innerHTML='<thead><tr>'
-      +'<th class="tl">Mois</th><th>Jours</th>'
+      +'<th class="tl">Mois</th>'
+      +'<th title="Jours presents dans les 2 annees">Jours comp.</th>'
       +'<th>CA '+y1+'</th><th>Moy/j '+y1+'</th><th>Tx '+y1+'</th>'
-      +'<th>CA '+y2+'</th><th>Moy/j '+y2+'</th><th>Tx '+y2+'</th>'
+      +'<th style="border-left:2px solid rgba(245,158,11,.3)">CA '+y2+' (comp.)</th>'
+      +'<th>CA '+y2+' TOTAL</th>'
+      +'<th>Diff.</th>'
+      +'<th>Tx '+y2+'</th>'
       +'<th>Evol. CA</th><th>Evol. Tx</th>'
       +'</tr></thead><tbody>'
       +moKeys.map(function(mo){
@@ -885,14 +915,17 @@ function renderComparison(){
         var evM=dif(m.c2.ca,m.c1.ca), evMTx=dif(m.c2.nbTx,m.c1.nbTx);
         var colM=evM===null?'var(--muted)':(+evM>=0?'var(--green)':'var(--red)');
         var colMTx=evMTx===null?'var(--muted)':(+evMTx>=0?'var(--green)':'var(--red)');
+        var fullMo=fullMonthY2[mo]||{ca:0,nbTx:0,n:0};
+        var diffMo=fullMo.ca-m.c2.ca;
         return '<tr>'
           +'<td class="tl" style="font-weight:600">'+moName+'</td>'
-          +'<td class="mo" style="color:var(--muted)">'+m.c1.n+'j</td>'
+          +'<td class="mo" style="color:var(--muted)">'+m.c1.n+'j / '+fullMo.n+'j</td>'
           +'<td class="mo" style="color:var(--blue)">'+fmtS(m.c1.ca)+'</td>'
           +'<td class="mo" style="color:var(--muted);font-size:11px">'+( m.c1.n?fmtS(m.c1.ca/m.c1.n):'—')+'</td>'
           +'<td class="mo" style="color:var(--green)">'+m.c1.nbTx+'</td>'
-          +'<td class="mo" style="color:var(--amber);font-weight:700">'+fmtS(m.c2.ca)+'</td>'
-          +'<td class="mo" style="color:var(--muted);font-size:11px">'+( m.c2.n?fmtS(m.c2.ca/m.c2.n):'—')+'</td>'
+          +'<td class="mo" style="color:var(--blue);border-left:2px solid rgba(245,158,11,.3)">'+fmtS(m.c2.ca)+'</td>'
+          +'<td class="mo" style="color:var(--amber);font-weight:700">'+fmtS(fullMo.ca)+'</td>'
+          +'<td class="mo" style="color:'+(diffMo>0?'var(--muted)':'var(--muted)')+';font-size:11px">'+( diffMo>0.01?'+'+fmtS(diffMo):(diffMo<-0.01?fmtS(diffMo):'='))+'</td>'
           +'<td class="mo" style="color:var(--green)">'+m.c2.nbTx+'</td>'
           +'<td class="mo" style="color:'+colM+';font-weight:700">'+( evM!=null?(+evM>=0?'+':'')+evM+'%':'—')+'</td>'
           +'<td class="mo" style="color:'+colMTx+';font-weight:700">'+( evMTx!=null?(+evMTx>=0?'+':'')+evMTx+'%':'—')+'</td>'
@@ -900,12 +933,13 @@ function renderComparison(){
       }).join('')
       +'</tbody><tfoot><tr style="border-top:1px solid var(--b2)">'
       +'<td class="tl" style="font-weight:700">TOTAL</td>'
-      +'<td class="mo" style="color:var(--muted)">'+c1.n+'j</td>'
+      +'<td class="mo" style="color:var(--muted)">'+c1.n+'j / '+fullY2.n+'j</td>'
       +'<td class="mo" style="color:var(--blue);font-weight:700">'+fmt(c1.ca)+'</td>'
       +'<td class="mo" style="color:var(--muted)">'+( c1.n?fmtS(c1.ca/c1.n):'—')+'</td>'
       +'<td class="mo" style="color:var(--green);font-weight:700">'+c1.nbTx+'</td>'
-      +'<td class="mo" style="color:var(--amber);font-weight:700">'+fmt(c2.ca)+'</td>'
-      +'<td class="mo" style="color:var(--muted)">'+( c2.n?fmtS(c2.ca/c2.n):'—')+'</td>'
+      +'<td class="mo" style="color:var(--blue);font-weight:700;border-left:2px solid rgba(245,158,11,.3)">'+fmt(c2.ca)+'</td>'
+      +'<td class="mo" style="color:var(--amber);font-weight:700">'+fmt(fullY2.ca)+'</td>'
+      +'<td class="mo" style="color:var(--muted)">'+( fullY2.ca-c2.ca>0.01?'+'+fmtS(fullY2.ca-c2.ca):'=')+'</td>'
       +'<td class="mo" style="color:var(--green);font-weight:700">'+c2.nbTx+'</td>'
       +'<td class="mo" style="color:'+(eCA!=null&&+eCA>=0?'var(--green)':'var(--red)')+';font-weight:700">'+( eCA!=null?(+eCA>=0?'+':'')+eCA+'%':'—')+'</td>'
       +'<td class="mo" style="color:'+(eTx!=null&&+eTx>=0?'var(--green)':'var(--red)')+';font-weight:700">'+( eTx!=null?(+eTx>=0?'+':'')+eTx+'%':'—')+'</td>'
