@@ -263,30 +263,43 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
 
     <!-- COMPARE -->
     <div class="page" id="page-compare">
-      <div class="cmpbar" id="cmpbar">
-        <span style="font-size:11px;color:var(--muted)">Comparer</span>
-        <div class="cinput-wrap">
-          <div class="cinput-label" style="color:var(--blue)">Annee 1</div>
-          <input class="cinput" id="cmp-y1" type="text" maxlength="4" placeholder="2025" style="border-color:var(--blue);color:var(--blue);"/>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="ct">Choisir les periodes a comparer</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div style="background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.2);border-radius:10px;padding:12px">
+            <div style="font-size:10px;font-weight:700;color:var(--blue);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Periode 1</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="paie-field"><label>Du</label><input type="date" id="p1f" oninput="triggerCmp()"/></div>
+              <div class="paie-field"><label>Au</label><input type="date" id="p1t" oninput="triggerCmp()"/></div>
+            </div>
+          </div>
+          <div style="background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:12px">
+            <div style="font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Periode 2</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="paie-field"><label>Du</label><input type="date" id="p2f" oninput="triggerCmp()"/></div>
+              <div class="paie-field"><label>Au</label><input type="date" id="p2t" oninput="triggerCmp()"/></div>
+            </div>
+          </div>
         </div>
-        <span style="font-size:18px;color:var(--dim)">vs</span>
-        <div class="cinput-wrap">
-          <div class="cinput-label" style="color:var(--amber)">Annee 2</div>
-          <input class="cinput" id="cmp-y2" type="text" maxlength="4" placeholder="2026" style="border-color:var(--amber);color:var(--amber);"/>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:10px;color:var(--muted)">Raccourcis :</span>
+          <div id="cmp-chips" style="display:flex;gap:5px;flex-wrap:wrap"></div>
         </div>
-        <div class="cavail" id="cmp-avail"></div>
+        <div id="cmp-info" style="font-size:11px;color:var(--muted);margin-top:10px;min-height:16px"></div>
       </div>
-      <div class="kgrid" id="cmp-kpis"></div>
-      <!-- COMPARABLE PERIOD -->
-      <div class="card" id="card-comparable" style="display:none">
-        <div class="ct">Periode comparable date a date</div>
-        <div id="comparable-info" style="font-size:11px;color:var(--muted);margin-bottom:14px;padding:8px 12px;background:rgba(56,189,248,.04);border-radius:8px;border:1px solid var(--b)"></div>
-        <div class="kgrid" id="cmp-comparable-kpis"></div>
-        <div style="overflow-x:auto"><table class="tbl" id="t-comparable"></table></div>
+
+      <div id="cmp-empty" style="text-align:center;padding:32px;color:var(--muted);font-size:13px">
+        Selectionne deux periodes pour lancer la comparaison.
       </div>
-      <div class="card"><div class="ct">CA mensuel comparaison</div><div class="cw"><canvas id="c-cmp"></canvas></div></div>
-      <div class="card"><div class="ct">Evolution % mois par mois</div><div class="cw" style="height:180px"><canvas id="c-cmpline"></canvas></div></div>
-      <div class="card"><div class="ct">Tableau comparatif</div><div style="overflow-x:auto"><table class="tbl" id="t-cmp"></table></div></div>
+
+      <div id="cmp-results" style="display:none">
+        <div class="kgrid" id="cmp-kpis"></div>
+        <div class="card"><div class="ct">CA par jour</div><div class="cw"><canvas id="c-cmp"></canvas></div></div>
+        <div class="card"><div class="ct">Top categories</div><div class="cw" style="height:190px"><canvas id="c-cmpcat"></canvas></div></div>
+        <div class="card"><div class="ct">Detail</div><div style="overflow-x:auto"><table class="tbl" id="t-cmp"></table></div></div>
+      </div>
+
     </div>
 
     <!-- MONTHLY -->
@@ -820,309 +833,323 @@ function selAYear(y){ selAY=y; renderAnnual(); }
 // RENDER COMPARISON
 // =====================================================
 
-// Init date pickers with smart defaults
-function initCmpDates(){
-  var allDates = Object.keys(LD).sort();
-  if(!allDates.length) return;
-  var last  = allDates[allDates.length-1];
-  var first = allDates[0];
+var cmpDebounce;
 
-  // Default P2 = last full month available
-  var p2to   = document.getElementById('p2-to');
-  var p2from = document.getElementById('p2-from');
-  var p1from = document.getElementById('p1-from');
-  var p1to   = document.getElementById('p1-to');
-  if(!p2to) return;
+function triggerCmp(){
+  clearTimeout(cmpDebounce);
+  cmpDebounce = setTimeout(function(){ renderComparison(); }, 300);
+}
 
-  // Only set defaults if fields are empty
-  if(!p2to.value){
-    var lastYM = last.slice(0,7);
-    // find last day of that month in LD
-    var daysInLastMonth = allDates.filter(function(d){ return d.startsWith(lastYM); });
-    p2from.value = daysInLastMonth[0]||last;
-    p2to.value   = daysInLastMonth[daysInLastMonth.length-1]||last;
+function cmpGetDates(from, to){
+  if(!from || !to) return [];
+  var r = [];
+  var keys = Object.keys(LD).sort();
+  for(var i=0;i<keys.length;i++){
+    if(keys[i] >= from && keys[i] <= to) r.push(keys[i]);
   }
-  if(!p1to.value){
-    // Default P1 = same month previous year, or previous month
-    var p2y = +(document.getElementById('p2-from').value||last).slice(0,4);
-    var p2m = +(document.getElementById('p2-from').value||last).slice(5,7);
-    var p1y = p2y, p1m = p2m-1;
-    if(p1m<1){ p1m=12; p1y--; }
-    var p1key = p1y+'-'+String(p1m).padStart(2,'0');
-    var daysP1 = allDates.filter(function(d){ return d.startsWith(p1key); });
-    if(daysP1.length){
-      p1from.value = daysP1[0];
-      p1to.value   = daysP1[daysP1.length-1];
-    } else {
-      // Try same month -1 year
-      var p1keyY = (p2y-1)+'-'+String(p2m).padStart(2,'0');
-      var daysP1Y = allDates.filter(function(d){ return d.startsWith(p1keyY); });
-      if(daysP1Y.length){
-        p1from.value = daysP1Y[0];
-        p1to.value   = daysP1Y[daysP1Y.length-1];
-      }
-    }
-  }
-
-  // Build shortcut buttons
-  buildShortcuts();
-  onRangeChange();
-}
-
-var shortcutKeys = [];
-function buildShortcuts(){
-  var allDates = Object.keys(LD).sort();
-  if(!allDates.length) return;
-  var el = document.getElementById('cmp-shortcuts');
-  if(!el) return;
-  var months = {};
-  allDates.forEach(function(ds){ months[ds.slice(0,7)]=true; });
-  shortcutKeys = Object.keys(months).sort().reverse().slice(0,8);
-  var html = shortcutKeys.map(function(mk,i){
-    var mo = MO_FULL[+mk.slice(5,7)-1];
-    var yr = mk.slice(0,4);
-    return '<button class="cpill" onclick="applyShortcut(shortcutKeys['+i+'])" style="font-size:10px">'+mo.slice(0,3)+' '+yr+'</button>';
-  }).join('');
-  el.innerHTML = html;
-}
-
-function applyShortcut(mk){
-  var allDates = Object.keys(LD).sort();
-  var days = allDates.filter(function(d){ return d.startsWith(mk); });
-  if(!days.length) return;
-
-  // Set as P2
-  var p2f = document.getElementById('p2-from');
-  var p2t = document.getElementById('p2-to');
-  if(p2f) p2f.value = days[0];
-  if(p2t) p2t.value = days[days.length-1];
-
-  // Find same month previous year or previous month for P1
-  var yr = +mk.slice(0,4), mo = +mk.slice(5,7);
-  var p1key1 = (yr-1)+'-'+String(mo).padStart(2,'0'); // meme mois annee precedente
-  var p1key2 = yr+'-'+String(mo-1>0?mo-1:12).padStart(2,'0'); // mois precedent
-  if(mo-1<1) p1key2=(yr-1)+'-12';
-
-  var days1 = allDates.filter(function(d){ return d.startsWith(p1key1); });
-  var days2 = allDates.filter(function(d){ return d.startsWith(p1key2); });
-  var chosen = days1.length ? days1 : days2;
-
-  var p1f = document.getElementById('p1-from');
-  var p1t = document.getElementById('p1-to');
-  if(chosen.length && p1f && p1t){
-    p1f.value = chosen[0];
-    p1t.value = chosen[chosen.length-1];
-  }
-  onRangeChange();
-}
-
-var cmpTimer;
-function onRangeChange(){
-  clearTimeout(cmpTimer);
-  cmpTimer = setTimeout(function(){ renderComparison(); }, 200);
-}
-
-function getDatesInRange(from, to){
-  if(!from||!to) return [];
-  return Object.keys(LD).filter(function(ds){ return ds>=from && ds<=to; }).sort();
-}
-
-function computeRangeTotals(dates){
-  var r={ca:0,cb:0,esp:0,nbTx:0,n:dates.length,cats:{},prods:{}};
-  dates.forEach(function(ds){
-    var d=LD[ds]||{};
-    r.ca+=d.ca||0; r.cb+=d.cb||0; r.esp+=d.esp||0; r.nbTx+=d.nbTx||0;
-    Object.keys(d.cats||{}).forEach(function(k){ r.cats[k]=(r.cats[k]||0)+d.cats[k]; });
-    Object.keys(d.prods||{}).forEach(function(k){
-      if(!r.prods[k]) r.prods[k]={ca:0,qte:0};
-      r.prods[k].ca+=(d.prods[k]&&d.prods[k].ca)||0;
-      r.prods[k].qte+=(d.prods[k]&&d.prods[k].qte)||0;
-    });
-  });
   return r;
 }
 
-function formatRange(from,to){
-  if(!from||!to) return '—';
-  var f=fmtDs(from), t=fmtDs(to);
-  return f===t ? f : f+' au '+t;
+function cmpTotal(dates){
+  var r = {ca:0,cb:0,esp:0,nbTx:0,n:dates.length,cats:{},prods:{}};
+  for(var i=0;i<dates.length;i++){
+    var d = LD[dates[i]] || {};
+    r.ca  += d.ca  || 0;
+    r.cb  += d.cb  || 0;
+    r.esp += d.esp || 0;
+    r.nbTx+= d.nbTx|| 0;
+    var ck = Object.keys(d.cats || {});
+    for(var j=0;j<ck.length;j++){
+      r.cats[ck[j]] = (r.cats[ck[j]]||0) + d.cats[ck[j]];
+    }
+    var pk = Object.keys(d.prods || {});
+    for(var j=0;j<pk.length;j++){
+      if(!r.prods[pk[j]]) r.prods[pk[j]] = {ca:0,qte:0};
+      r.prods[pk[j]].ca  += (d.prods[pk[j]].ca  || 0);
+      r.prods[pk[j]].qte += (d.prods[pk[j]].qte || 0);
+    }
+  }
+  return r;
+}
+
+function cmpFmtRange(f,t){
+  if(!f||!t) return '—';
+  if(f===t) return fmtDs(f);
+  return fmtDs(f) + ' au ' + fmtDs(t);
+}
+
+// Shortcut chips — stored in array so onclick can use index
+var cmpChipKeys = [];
+
+function buildCmpChips(){
+  var el = document.getElementById('cmp-chips');
+  if(!el) return;
+  var allDates = Object.keys(LD).sort();
+  var seen = {}, mkeys = [];
+  for(var i=0;i<allDates.length;i++){
+    var mk = allDates[i].slice(0,7);
+    if(!seen[mk]){ seen[mk]=true; mkeys.push(mk); }
+  }
+  mkeys.reverse();
+  cmpChipKeys = mkeys.slice(0,8);
+  var html = '';
+  for(var i=0;i<cmpChipKeys.length;i++){
+    var mk = cmpChipKeys[i];
+    var mo = MO_FULL[+mk.slice(5,7)-1];
+    var yr = mk.slice(0,4);
+    html += '<button class="cpill" onclick="cmpChip(' + i + ')" style="font-size:10px">' + mo.slice(0,3) + ' ' + yr + '</button>';
+  }
+  el.innerHTML = html;
+}
+
+function cmpChip(idx){
+  var mk = cmpChipKeys[idx];
+  if(!mk) return;
+  var allDates = Object.keys(LD).sort();
+  var days2 = [];
+  for(var i=0;i<allDates.length;i++){
+    if(allDates[i].slice(0,7)===mk) days2.push(allDates[i]);
+  }
+  if(!days2.length) return;
+
+  var el_p2f = document.getElementById('p2f');
+  var el_p2t = document.getElementById('p2t');
+  if(el_p2f) el_p2f.value = days2[0];
+  if(el_p2t) el_p2t.value = days2[days2.length-1];
+
+  // P1 = meme mois annee precedente, sinon mois precedent
+  var yr = +mk.slice(0,4), mo = +mk.slice(5,7);
+  var prev1 = (yr-1) + '-' + String(mo).padStart(2,'0');
+  var prev2 = yr + '-' + String(mo>1?mo-1:12).padStart(2,'0');
+  if(mo===1) prev2 = (yr-1) + '-12';
+
+  var days1 = [];
+  for(var i=0;i<allDates.length;i++){
+    if(allDates[i].slice(0,7)===prev1) days1.push(allDates[i]);
+  }
+  if(!days1.length){
+    for(var i=0;i<allDates.length;i++){
+      if(allDates[i].slice(0,7)===prev2) days1.push(allDates[i]);
+    }
+  }
+
+  var el_p1f = document.getElementById('p1f');
+  var el_p1t = document.getElementById('p1t');
+  if(days1.length && el_p1f && el_p1t){
+    el_p1f.value = days1[0];
+    el_p1t.value = days1[days1.length-1];
+  }
+  renderComparison();
+}
+
+function initCmpDates(){
+  buildCmpChips();
+  var el_p2f = document.getElementById('p2f');
+  // Only auto-fill if empty
+  if(!el_p2f || el_p2f.value) { renderComparison(); return; }
+  if(cmpChipKeys.length > 0) cmpChip(0);
+  else renderComparison();
 }
 
 function renderComparison(){
-  var p1f=(document.getElementById('p1-from')||{}).value||'';
-  var p1t=(document.getElementById('p1-to')||{}).value||'';
-  var p2f=(document.getElementById('p2-from')||{}).value||'';
-  var p2t=(document.getElementById('p2-to')||{}).value||'';
+  var p1f = (document.getElementById('p1f')||{}).value || '';
+  var p1t = (document.getElementById('p1t')||{}).value || '';
+  var p2f = (document.getElementById('p2f')||{}).value || '';
+  var p2t = (document.getElementById('p2t')||{}).value || '';
 
-  var infoEl = document.getElementById('cmp-range-info');
-  var resEl  = document.getElementById('cmp-results');
-  var empEl  = document.getElementById('cmp-empty');
+  var infoEl   = document.getElementById('cmp-info');
+  var resEl    = document.getElementById('cmp-results');
+  var emptyEl  = document.getElementById('cmp-empty');
+  var kpisEl   = document.getElementById('cmp-kpis');
+  var tblEl    = document.getElementById('t-cmp');
 
-  if(!p1f||!p1t||!p2f||!p2t){
-    if(resEl) resEl.style.display='none';
-    if(empEl) empEl.style.display='block';
-    if(infoEl) infoEl.textContent='';
+  if(!p1f || !p1t || !p2f || !p2t){
+    if(resEl)   resEl.style.display  = 'none';
+    if(emptyEl) emptyEl.style.display = 'block';
+    if(infoEl)  infoEl.textContent   = '';
     return;
   }
 
-  var dates1 = getDatesInRange(p1f,p1t);
-  var dates2 = getDatesInRange(p2f,p2t);
+  var dates1 = cmpGetDates(p1f, p1t);
+  var dates2 = cmpGetDates(p2f, p2t);
 
   if(infoEl){
-    infoEl.innerHTML='<span style="color:var(--blue)">Periode 1</span> : '
-      +formatRange(p1f,p1t)+' — <strong style="color:var(--blue)">'+dates1.length+' jours</strong>'
-      +'&nbsp;&nbsp;|&nbsp;&nbsp;<span style="color:var(--amber)">Periode 2</span> : '
-      +formatRange(p2f,p2t)+' — <strong style="color:var(--amber)">'+dates2.length+' jours</strong>';
+    infoEl.innerHTML =
+      '<span style="color:var(--blue)">P1</span> : ' + cmpFmtRange(p1f,p1t) +
+      ' <strong style="color:var(--blue)">(' + dates1.length + 'j)</strong>' +
+      ' &nbsp;|&nbsp; ' +
+      '<span style="color:var(--amber)">P2</span> : ' + cmpFmtRange(p2f,p2t) +
+      ' <strong style="color:var(--amber)">(' + dates2.length + 'j)</strong>';
   }
 
-  if(!dates1.length&&!dates2.length){
-    if(resEl) resEl.style.display='none';
-    if(empEl){ empEl.style.display='block'; empEl.textContent='Aucune donnee sur ces periodes. Importez vos fichiers.'; }
+  if(!dates1.length && !dates2.length){
+    if(resEl)   resEl.style.display  = 'none';
+    if(emptyEl){ emptyEl.style.display='block'; emptyEl.textContent='Aucune donnee sur ces periodes.'; }
     return;
   }
 
-  if(resEl) resEl.style.display='block';
-  if(empEl) empEl.style.display='none';
+  if(resEl)   resEl.style.display  = 'block';
+  if(emptyEl) emptyEl.style.display = 'none';
 
-  var t1=computeRangeTotals(dates1);
-  var t2=computeRangeTotals(dates2);
+  var t1 = cmpTotal(dates1);
+  var t2 = cmpTotal(dates2);
 
-  var evCA  = dif(t2.ca,  t1.ca);
-  var evTx  = dif(t2.nbTx,t1.nbTx);
-  var evMoy1= t1.n?t1.ca/t1.n:0, evMoy2=t2.n?t2.ca/t2.n:0;
-  var evMoy = dif(evMoy2, evMoy1);
-  var pan1  = t1.nbTx?t1.ca/t1.nbTx:0, pan2=t2.nbTx?t2.ca/t2.nbTx:0;
-  var evPan = dif(pan2,pan1);
+  var evCA  = dif(t2.ca,   t1.ca);
+  var evTx  = dif(t2.nbTx, t1.nbTx);
+  var moy1  = t1.n ? t1.ca/t1.n : 0;
+  var moy2  = t2.n ? t2.ca/t2.n : 0;
+  var pan1  = t1.nbTx ? t1.ca/t1.nbTx : 0;
+  var pan2  = t2.nbTx ? t2.ca/t2.nbTx : 0;
+  var evPan = dif(pan2, pan1);
 
-  // ── KPIs
-  document.getElementById('cmp-kpis').innerHTML=[
-    {l:'CA Periode 1 ('+dates1.length+'j)',  v:fmt(t1.ca),  s:t1.nbTx+' tx — moy. '+fmtS(evMoy1)+'/j', c:'var(--blue)'},
-    {l:'CA Periode 2 ('+dates2.length+'j)',  v:fmt(t2.ca),  s:t2.nbTx+' tx — moy. '+fmtS(evMoy2)+'/j', c:'var(--amber)', b:evCA},
-    {l:'Evolution CA',     v:evCA!=null?(+evCA>=0?'+':'')+evCA+'%':'—',  s:'P1 > P2', c:(evCA!=null&&+evCA>=0)?'var(--green)':'var(--red)'},
-    {l:'Evol. transactions',v:evTx!=null?(+evTx>=0?'+':'')+evTx+'%':'—', s:(t1.nbTx||0)+' > '+(t2.nbTx||0)+' tx', c:(evTx!=null&&+evTx>=0)?'var(--green)':'var(--red)'},
-  ].map(function(k){
-    return '<div class="kpi"><div class="kl">'+k.l+'</div>'
-      +'<div class="kv" style="color:'+k.c+';font-size:'+(k.v.length>12?'13px':'17px')+'">'+k.v+(k.b!=null?chip(k.b):'')+'</div>'
-      +'<div class="ks">'+k.s+'</div></div>';
-  }).join('');
+  // KPIs
+  if(kpisEl){
+    var kd = [
+      {l:'CA Periode 1 ('+dates1.length+'j)', v:fmt(t1.ca),  s:t1.nbTx+' tx  moy '+fmtS(moy1)+'/j', c:'var(--blue)'},
+      {l:'CA Periode 2 ('+dates2.length+'j)', v:fmt(t2.ca),  s:t2.nbTx+' tx  moy '+fmtS(moy2)+'/j', c:'var(--amber)', b:evCA},
+      {l:'Evolution CA',    v:evCA!=null?(+evCA>=0?'+':'')+evCA+'%':'—',  s:'P1 vers P2', c:(evCA!=null&&+evCA>=0)?'var(--green)':'var(--red)'},
+      {l:'Panier moyen',    v:fmtS(pan1)+' / '+fmtS(pan2), s:evPan!=null?(+evPan>=0?'+':'')+evPan+'%':'—', c:'var(--purple)'}
+    ];
+    var khtml = '';
+    for(var i=0;i<kd.length;i++){
+      var k = kd[i];
+      khtml += '<div class="kpi"><div class="kl">'+k.l+'</div>'
+        + '<div class="kv" style="color:'+k.c+';font-size:'+(k.v.length>12?'13px':'17px')+'">'+k.v+(k.b!=null?chip(k.b):'')+'</div>'
+        + '<div class="ks">'+k.s+'</div></div>';
+    }
+    kpisEl.innerHTML = khtml;
+  }
 
-  // ── Bar chart : CA par jour superpose
-  // On normalise par l'index du jour (jour 1, jour 2...) pour comparer
-  var maxLen = Math.max(dates1.length, dates2.length, 1);
+  // Bar chart CA par jour
+  var maxLen = Math.max(dates1.length, dates2.length);
   var labels=[], v1arr=[], v2arr=[];
   for(var i=0;i<maxLen;i++){
     labels.push('J'+(i+1));
-    v1arr.push(dates1[i]?(LD[dates1[i]]&&LD[dates1[i]].ca)||0:null);
-    v2arr.push(dates2[i]?(LD[dates2[i]]&&LD[dates2[i]].ca)||0:null);
+    v1arr.push(dates1[i] ? ((LD[dates1[i]]&&LD[dates1[i]].ca)||0) : null);
+    v2arr.push(dates2[i] ? ((LD[dates2[i]]&&LD[dates2[i]].ca)||0) : null);
   }
   dc('cmp');
-  CH['cmp']=new Chart(document.getElementById('c-cmp').getContext('2d'),{type:'bar',
-    data:{labels:labels,datasets:[
-      {label:'P1 '+formatRange(p1f,p1t),data:v1arr,backgroundColor:'rgba(56,189,248,.65)',borderRadius:3},
-      {label:'P2 '+formatRange(p2f,p2t),data:v2arr,backgroundColor:'rgba(245,158,11,.65)',borderRadius:3}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},
-      scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){ return v+'€'; }})}}}
-  });
-
-  // ── Categories chart : comparaison top 6 categories
-  var allCats={};
-  Object.keys(t1.cats).forEach(function(k){ if(!allCats[k]) allCats[k]=0; allCats[k]+=t1.cats[k]; });
-  Object.keys(t2.cats).forEach(function(k){ if(!allCats[k]) allCats[k]=0; allCats[k]+=t2.cats[k]; });
-  var topCats=Object.keys(allCats).sort(function(a,b){ return allCats[b]-allCats[a]; }).slice(0,6);
-  var cats1=topCats.map(function(k){ return t1.cats[k]||0; });
-  var cats2=topCats.map(function(k){ return t2.cats[k]||0; });
-  var catLabels=topCats.map(function(k){ return k.length>14?k.slice(0,13)+'...':k; });
-
-  dc('cmpline');
-  CH['cmpline']=new Chart(document.getElementById('c-cmpline').getContext('2d'),{type:'bar',
-    data:{labels:catLabels,datasets:[
-      {label:'P1',data:cats1,backgroundColor:'rgba(56,189,248,.7)',borderRadius:3},
-      {label:'P2',data:cats2,backgroundColor:'rgba(245,158,11,.7)',borderRadius:3}
-    ]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},
-      scales:{x:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){ return v+'€'; }})},y:{grid:{display:false},ticks:TICK}}}
-  });
-
-  // ── Tableau comparatif semaine par semaine (ou jour par jour si < 14j)
-  var useWeeks = Math.max(dates1.length,dates2.length)>14;
-  var rows='', thead='';
-
-  if(!useWeeks){
-    // Tableau jour par jour
-    thead='<tr><th class="tl">Jour</th>'
-      +'<th>Date P1</th><th>CA P1</th><th>Tx P1</th>'
-      +'<th>Date P2</th><th>CA P2</th><th>Tx P2</th>'
-      +'<th>Evol. CA</th></tr>';
-    for(var ri=0;ri<maxLen;ri++){
-      var ds1=dates1[ri]||'', ds2=dates2[ri]||'';
-      var dd1=LD[ds1]||{}, dd2=LD[ds2]||{};
-      var eRow=ds1&&ds2?dif(dd2.ca||0,dd1.ca||0):null;
-      var cRow=eRow===null?'var(--muted)':(+eRow>=0?'var(--green)':'var(--red)');
-      rows+='<tr>'
-        +'<td class="tl mo" style="color:var(--muted)">J'+(ri+1)+'</td>'
-        +'<td class="mo" style="color:var(--blue);font-size:11px">'+(ds1?fmtDs(ds1):'—')+'</td>'
-        +'<td class="mo" style="color:var(--blue)">'+(ds1?fmtS(dd1.ca||0):'—')+'</td>'
-        +'<td class="mo" style="color:var(--green)">'+(ds1?dd1.nbTx||0:'—')+'</td>'
-        +'<td class="mo" style="color:var(--amber);font-size:11px">'+(ds2?fmtDs(ds2):'—')+'</td>'
-        +'<td class="mo" style="color:var(--amber)">'+(ds2?fmtS(dd2.ca||0):'—')+'</td>'
-        +'<td class="mo" style="color:var(--green)">'+(ds2?dd2.nbTx||0:'—')+'</td>'
-        +'<td class="mo" style="color:'+cRow+';font-weight:700">'+(eRow!=null?(+eRow>=0?'+':'')+eRow+'%':'—')+'</td>'
-        +'</tr>';
-    }
-  } else {
-    // Tableau par semaine
-    thead='<tr><th class="tl">Semaine</th>'
-      +'<th>CA P1</th><th>Jours P1</th><th>Tx P1</th>'
-      +'<th>CA P2</th><th>Jours P2</th><th>Tx P2</th>'
-      +'<th>Evol. CA</th></tr>';
-    var wSize=7;
-    var nWeeks=Math.ceil(maxLen/wSize);
-    for(var wi=0;wi<nWeeks;wi++){
-      var w1dates=dates1.slice(wi*wSize,(wi+1)*wSize);
-      var w2dates=dates2.slice(wi*wSize,(wi+1)*wSize);
-      var w1=computeRangeTotals(w1dates), w2=computeRangeTotals(w2dates);
-      var eW=w1.ca&&w2.ca?dif(w2.ca,w1.ca):null;
-      var cW=eW===null?'var(--muted)':(+eW>=0?'var(--green)':'var(--red)');
-      rows+='<tr>'
-        +'<td class="tl" style="font-weight:600">S'+(wi+1)+'</td>'
-        +'<td class="mo" style="color:var(--blue)">'+(w1.n?fmtS(w1.ca):'—')+'</td>'
-        +'<td class="mo" style="color:var(--muted)">'+w1.n+'j</td>'
-        +'<td class="mo" style="color:var(--green)">'+w1.nbTx+'</td>'
-        +'<td class="mo" style="color:var(--amber)">'+(w2.n?fmtS(w2.ca):'—')+'</td>'
-        +'<td class="mo" style="color:var(--muted)">'+w2.n+'j</td>'
-        +'<td class="mo" style="color:var(--green)">'+w2.nbTx+'</td>'
-        +'<td class="mo" style="color:'+cW+';font-weight:700">'+(eW!=null?(+eW>=0?'+':'')+eW+'%':'—')+'</td>'
-        +'</tr>';
-    }
+  var canCmp = document.getElementById('c-cmp');
+  if(canCmp){
+    CH['cmp'] = new Chart(canCmp.getContext('2d'), {
+      type:'bar',
+      data:{labels:labels, datasets:[
+        {label:'P1 '+cmpFmtRange(p1f,p1t), data:v1arr, backgroundColor:'rgba(56,189,248,.65)', borderRadius:3},
+        {label:'P2 '+cmpFmtRange(p2f,p2t), data:v2arr, backgroundColor:'rgba(245,158,11,.65)', borderRadius:3}
+      ]},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}}, tooltip:TIP},
+        scales:{
+          x:{grid:{color:GRID}, ticks:TICK},
+          y:{grid:{color:GRID}, ticks:Object.assign({},TICKM,{callback:function(v){ return v+'€'; }})}
+        }}
+    });
   }
 
+  // Categories chart
+  var allCats = {};
+  var ck1 = Object.keys(t1.cats);
+  for(var i=0;i<ck1.length;i++) allCats[ck1[i]] = (allCats[ck1[i]]||0) + t1.cats[ck1[i]];
+  var ck2 = Object.keys(t2.cats);
+  for(var i=0;i<ck2.length;i++) allCats[ck2[i]] = (allCats[ck2[i]]||0) + t2.cats[ck2[i]];
+  var topCats = Object.keys(allCats).sort(function(a,b){ return allCats[b]-allCats[a]; }).slice(0,6);
+  var catsL=[], cats1=[], cats2=[];
+  for(var i=0;i<topCats.length;i++){
+    var k=topCats[i];
+    catsL.push(k.length>14 ? k.slice(0,13)+'...' : k);
+    cats1.push(t1.cats[k]||0);
+    cats2.push(t2.cats[k]||0);
+  }
+  dc('cmpcat');
+  var canCat = document.getElementById('c-cmpcat');
+  if(canCat && topCats.length){
+    CH['cmpcat'] = new Chart(canCat.getContext('2d'), {
+      type:'bar',
+      data:{labels:catsL, datasets:[
+        {label:'P1', data:cats1, backgroundColor:'rgba(56,189,248,.7)', borderRadius:3},
+        {label:'P2', data:cats2, backgroundColor:'rgba(245,158,11,.7)', borderRadius:3}
+      ]},
+      options:{indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}}, tooltip:TIP},
+        scales:{
+          x:{grid:{color:GRID}, ticks:Object.assign({},TICKM,{callback:function(v){ return v+'€'; }})},
+          y:{grid:{display:false}, ticks:TICK}
+        }}
+    });
+  }
+
+  // Detail table
+  if(!tblEl) return;
+  var useWeeks = maxLen > 14;
+  var thead = '', rows = '';
+
+  if(!useWeeks){
+    thead = '<tr>'
+      + '<th class="tl">Jour</th>'
+      + '<th>Date P1</th><th>CA P1</th><th>Tx P1</th>'
+      + '<th>Date P2</th><th>CA P2</th><th>Tx P2</th>'
+      + '<th>Evol.</th></tr>';
+    for(var i=0;i<maxLen;i++){
+      var ds1=dates1[i]||'', ds2=dates2[i]||'';
+      var dd1=ds1?(LD[ds1]||{}):{}, dd2=ds2?(LD[ds2]||{}):{};
+      var ev = (ds1&&ds2) ? dif(dd2.ca||0, dd1.ca||0) : null;
+      var col = ev===null?'var(--muted)':(+ev>=0?'var(--green)':'var(--red)');
+      rows += '<tr>'
+        + '<td class="tl mo" style="color:var(--muted)">J'+(i+1)+'</td>'
+        + '<td class="mo" style="color:var(--blue);font-size:11px">'+(ds1?fmtDs(ds1):'—')+'</td>'
+        + '<td class="mo" style="color:var(--blue)">'+(ds1?fmtS(dd1.ca||0):'—')+'</td>'
+        + '<td class="mo" style="color:var(--green)">'+(ds1?dd1.nbTx||0:'—')+'</td>'
+        + '<td class="mo" style="color:var(--amber);font-size:11px">'+(ds2?fmtDs(ds2):'—')+'</td>'
+        + '<td class="mo" style="color:var(--amber)">'+(ds2?fmtS(dd2.ca||0):'—')+'</td>'
+        + '<td class="mo" style="color:var(--green)">'+(ds2?dd2.nbTx||0:'—')+'</td>'
+        + '<td class="mo" style="color:'+col+';font-weight:700">'+(ev!=null?(+ev>=0?'+':'')+ev+'%':'—')+'</td>'
+        + '</tr>';
+    }
+  } else {
+    thead = '<tr>'
+      + '<th class="tl">Semaine</th>'
+      + '<th>CA P1</th><th>Jours</th><th>Tx P1</th>'
+      + '<th>CA P2</th><th>Jours</th><th>Tx P2</th>'
+      + '<th>Evol.</th></tr>';
+    var nw = Math.ceil(maxLen/7);
+    for(var w=0;w<nw;w++){
+      var w1d = dates1.slice(w*7,(w+1)*7);
+      var w2d = dates2.slice(w*7,(w+1)*7);
+      var w1  = cmpTotal(w1d), w2 = cmpTotal(w2d);
+      var ew  = (w1.ca&&w2.ca) ? dif(w2.ca,w1.ca) : null;
+      var cw  = ew===null?'var(--muted)':(+ew>=0?'var(--green)':'var(--red)');
+      rows += '<tr>'
+        + '<td class="tl" style="font-weight:600">S'+(w+1)+'</td>'
+        + '<td class="mo" style="color:var(--blue)">'+(w1.n?fmtS(w1.ca):'—')+'</td>'
+        + '<td class="mo" style="color:var(--muted)">'+w1.n+'j</td>'
+        + '<td class="mo" style="color:var(--green)">'+w1.nbTx+'</td>'
+        + '<td class="mo" style="color:var(--amber)">'+(w2.n?fmtS(w2.ca):'—')+'</td>'
+        + '<td class="mo" style="color:var(--muted)">'+w2.n+'j</td>'
+        + '<td class="mo" style="color:var(--green)">'+w2.nbTx+'</td>'
+        + '<td class="mo" style="color:'+cw+';font-weight:700">'+(ew!=null?(+ew>=0?'+':'')+ew+'%':'—')+'</td>'
+        + '</tr>';
+    }
+  }
   // Total row
-  var eTotal=dif(t2.ca,t1.ca);
-  var cTotal=eTotal===null?'var(--muted)':(+eTotal>=0?'var(--green)':'var(--red)');
-  rows+='<tr style="border-top:1px solid var(--b2)">'
-    +'<td class="tl" style="font-weight:700">TOTAL</td>'
-    +'<td class="mo" style="color:var(--blue);font-weight:700">'+fmt(t1.ca)+'</td>'
-    +'<td class="mo" style="color:var(--muted)">'+t1.n+'j</td>'
-    +'<td class="mo" style="color:var(--green);font-weight:700">'+t1.nbTx+'</td>'
-    +'<td class="mo" style="color:var(--amber);font-weight:700">'+fmt(t2.ca)+'</td>'
-    +'<td class="mo" style="color:var(--muted)">'+t2.n+'j</td>'
-    +'<td class="mo" style="color:var(--green);font-weight:700">'+t2.nbTx+'</td>'
-    +'<td class="mo" style="color:'+cTotal+';font-weight:700">'+(eTotal!=null?(+eTotal>=0?'+':'')+eTotal+'%':'—')+'</td>'
-    +'</tr>';
+  var etot = dif(t2.ca, t1.ca);
+  var ctot = etot===null?'var(--muted)':(+etot>=0?'var(--green)':'var(--red)');
+  rows += '<tr style="border-top:1px solid var(--b2)">'
+    + '<td class="tl" style="font-weight:700">TOTAL</td>'
+    + '<td class="mo" style="color:var(--blue);font-weight:700">'+fmt(t1.ca)+'</td>'
+    + '<td class="mo" style="color:var(--muted)">'+t1.n+'j</td>'
+    + '<td class="mo" style="color:var(--green);font-weight:700">'+t1.nbTx+'</td>'
+    + '<td class="mo" style="color:var(--amber);font-weight:700">'+fmt(t2.ca)+'</td>'
+    + '<td class="mo" style="color:var(--muted)">'+t2.n+'j</td>'
+    + '<td class="mo" style="color:var(--green);font-weight:700">'+t2.nbTx+'</td>'
+    + '<td class="mo" style="color:'+ctot+';font-weight:700">'+(etot!=null?(+etot>=0?'+':'')+etot+'%':'—')+'</td>'
+    + '</tr>';
 
-  document.getElementById('t-cmp').innerHTML='<thead>'+thead+'</thead><tbody>'+rows+'</tbody>';
+  tblEl.innerHTML = '<thead>' + thead + '</thead><tbody>' + rows + '</tbody>';
 }
 
-function quickPick(y){} // kept for compat
-
-var cmpTimerY;
-function onCmpInput(){
-  clearTimeout(cmpTimerY);
-  cmpTimerY=setTimeout(function(){ renderComparison(); },500);
-}
+// kept for compat
+function quickPick(){}
+function onCmpInput(){ triggerCmp(); }
 
 // =====================================================
 // RENDER MONTHLY
@@ -1408,7 +1435,7 @@ document.querySelectorAll('.tab').forEach(function(btn){
     if(el) el.classList.add('on');
     var pg=btn.getAttribute('data-p');
     if(pg==='annual')   renderAnnual();
-    if(pg==='compare')  { initCmpDates(); }
+    if(pg==='compare')  initCmp();
     if(pg==='monthly')  renderMonthly();
     if(pg==='detail')   renderDetail();
     if(pg==='imports')  renderImports();
@@ -1440,7 +1467,7 @@ function renderAll(){
     if(activeTab){
       var pg=activeTab.getAttribute('data-p');
       if(pg==='annual')   { try{ renderAnnual(); }catch(e){ console.error(e); } }
-      if(pg==='compare')  { try{ initCmpDates(); }catch(e){ console.error(e); } }
+      if(pg==='compare')  { try{ initCmp(); }catch(e){ console.error(e); } }
       if(pg==='monthly')  { try{ renderMonthly(); }catch(e){ console.error(e); } }
       if(pg==='detail')   { try{ renderDetail(); }catch(e){ console.error(e); } }
       if(pg==='imports')  { try{ renderImports(); }catch(e){ console.error(e); } }
