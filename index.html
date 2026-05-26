@@ -8,6 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -147,6 +148,30 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
 #prog{position:fixed;top:0;left:0;right:0;height:3px;z-index:300;}
 #pb{height:3px;background:linear-gradient(90deg,var(--blue),#0ea5e9);width:0%;transition:width .3s;}
 
+/* PAIE */
+.emp-card{background:rgba(15,23,42,.9);border:1px solid var(--b);border-radius:12px;padding:16px 18px;margin-bottom:14px;}
+.emp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.emp-name{font-size:15px;font-weight:800;letter-spacing:.03em;}
+.emp-toggle{font-size:10px;color:var(--muted);cursor:pointer;background:none;border:1px solid var(--b);border-radius:6px;padding:3px 10px;font-family:var(--f);}
+.emp-toggle:hover{color:var(--text);border-color:var(--b2);}
+.paie-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(min-width:600px){.paie-grid{grid-template-columns:repeat(3,1fr);}}
+.paie-field{display:flex;flex-direction:column;gap:3px;}
+.paie-field label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.paie-field input,.paie-field textarea,.paie-field select{background:var(--bg2);border:1px solid var(--b);border-radius:8px;color:var(--text);font-family:var(--m);font-size:13px;padding:8px 10px;outline:none;width:100%;}
+.paie-field input:focus,.paie-field textarea:focus{border-color:var(--b2);}
+.paie-field textarea{resize:vertical;min-height:56px;font-size:12px;}
+.paie-field.full{grid-column:1/-1;}
+.month-nav{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.month-nav button{background:none;border:1px solid var(--b);border-radius:8px;color:var(--muted);font-family:var(--f);font-size:13px;padding:6px 14px;cursor:pointer;}
+.month-nav button:hover{color:var(--text);border-color:var(--b2);}
+.month-nav .cur{font-family:var(--m);font-size:16px;font-weight:700;color:var(--text);min-width:140px;text-align:center;}
+.paie-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+.pbtn{background:linear-gradient(135deg,var(--blue),#0ea5e9);border:none;border-radius:9px;color:#fff;font-family:var(--f);font-size:13px;font-weight:700;padding:10px 20px;cursor:pointer;}
+.pbtn.sec{background:rgba(56,189,248,.1);border:1px solid var(--b2);color:var(--blue);}
+.pbtn.ok{background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);color:var(--green);}
+.psaved{font-size:11px;color:var(--green);display:none;}
+
 /* IMPORT LOG */
 .iitem{border:1px solid var(--b);border-radius:9px;padding:10px 13px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px;}
 .idot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
@@ -221,6 +246,7 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
     <button class="tab" data-p="compare">Comparaison</button>
     <button class="tab" data-p="monthly">Mensuel</button>
     <button class="tab" data-p="detail">Produits &amp; Clients</button>
+    <button class="tab" data-p="paie">&#128197; Paie</button>
     <button class="tab" data-p="imports">Imports <span class="tbadge" id="ibadge">0</span></button>
   </div>
 
@@ -309,6 +335,44 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
         <button onclick="resetAll()" class="hbtn" style="color:var(--red);border-color:rgba(244,63,94,.3)">Effacer toutes les donnees</button>
       </div>
     </div>
+
+    <!-- PAIE -->
+    <div class="page" id="page-paie">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-size:18px;font-weight:800">Preparation de paie</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Informations mensuelles pour la comptable</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted)">Destinataire : <strong style="color:var(--text)">Salome</strong></div>
+      </div>
+
+      <!-- Month navigation -->
+      <div class="month-nav">
+        <button onclick="paieMonthMove(-1)">&#8592;</button>
+        <div class="cur" id="paie-month-lbl">Mai 2026</div>
+        <button onclick="paieMonthMove(+1)">&#8594;</button>
+        <button class="hbtn primary" onclick="savePaie()">&#128190; Sauvegarder</button>
+        <span class="psaved" id="paie-saved">&#10003; Sauvegarde</span>
+      </div>
+
+      <!-- Employees -->
+      <div id="paie-employees"></div>
+
+      <!-- Actions -->
+      <div class="paie-actions">
+        <button class="pbtn" onclick="exportPaieDocx()">&#128196; Exporter Word (.docx)</button>
+        <button class="pbtn sec" onclick="previewPaie()">&#128065; Apercu</button>
+      </div>
+
+      <!-- Preview -->
+      <div id="paie-preview" style="display:none;margin-top:16px">
+        <div class="card">
+          <div class="ct">Apercu du message</div>
+          <pre id="paie-preview-text" style="font-family:var(--f);font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.7"></pre>
+        </div>
+      </div>
+    </div>
+
 
     <!-- EMPTY -->
     <div id="empty-state" style="display:none">
@@ -1277,6 +1341,7 @@ document.querySelectorAll('.tab').forEach(function(btn){
     if(pg==='monthly')  renderMonthly();
     if(pg==='detail')   renderDetail();
     if(pg==='imports')  renderImports();
+    if(pg==='paie')     loadPaieMonth();
   });
 });
 
@@ -1312,6 +1377,194 @@ function renderAll(){
   }
 }
 
+
+// =====================================================
+// PAIE
+// =====================================================
+var EMPLOYEES = [
+  { id:'david',  name:'David Spanedda',  fields:['vacances','prime','absence','tickets','km','notes'] },
+  { id:'melvin', name:'Melvin Ladurelle', fields:['prime','absence','vacances','tickets','notes'] },
+  { id:'thomas', name:'Thomas Martin',   fields:['tickets','notes'] },
+];
+
+var paieYear  = new Date().getFullYear();
+var paieMonth = new Date().getMonth()+1; // 1-12
+var paieData  = {}; // { empId: { field: value } }
+
+var MO_FULL = ['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre'];
+var FIELD_LABELS = {
+  vacances: 'Vacances (dates)',
+  prime:    'Prime',
+  absence:  'Absence',
+  tickets:  'Nb tickets restaurant',
+  km:       'Indemnite kilometrique',
+  notes:    'Notes / autres infos'
+};
+
+function paieColKey(){ return currentShop+'_paie_'+paieYear+'_'+String(paieMonth).padStart(2,'0'); }
+
+function paieMonthMove(dir){
+  paieMonth+=dir;
+  if(paieMonth<1){ paieMonth=12; paieYear--; }
+  if(paieMonth>12){ paieMonth=1; paieYear++; }
+  loadPaieMonth();
+}
+
+async function loadPaieMonth(){
+  $('paie-month-lbl').textContent = MO_FULL[paieMonth-1]+' '+paieYear;
+  $('paie-preview').style.display='none';
+  paieData={};
+  if(db){
+    try{
+      var doc = await db.collection(currentShop+'_paie').doc(paieColKey()).get();
+      if(doc.exists) paieData = doc.data()||{};
+    } catch(e){ console.error('loadPaie:',e); }
+  }
+  renderPaieForm();
+}
+
+function renderPaieForm(){
+  var html = EMPLOYEES.map(function(emp){
+    var d = paieData[emp.id]||{};
+    var fields = emp.fields.map(function(f){
+      var val = d[f]||'';
+      var isTA = f==='notes'||f==='vacances';
+      var cls = (f==='notes'||f==='km')?'paie-field full':'paie-field';
+      if(isTA){
+        return '<div class="'+cls+'"><label>'+FIELD_LABELS[f]+'</label>'
+          +'<textarea id="pf-'+emp.id+'-'+f+'" placeholder="RAS">'+val+'</textarea></div>';
+      }
+      return '<div class="'+cls+'"><label>'+FIELD_LABELS[f]+'</label>'
+        +'<input type="text" id="pf-'+emp.id+'-'+f+'" placeholder="RAS" value="'+val.replace(/"/g,'&quot;')+'"/></div>';
+    }).join('');
+
+    return '<div class="emp-card">'
+      +'<div class="emp-header">'
+      +'<div class="emp-name" style="color:var(--blue)">'+emp.name+'</div>'
+      +'</div>'
+      +'<div class="paie-grid">'+fields+'</div>'
+      +'</div>';
+  }).join('');
+  $('paie-employees').innerHTML = html;
+}
+
+function collectPaieData(){
+  var data={};
+  EMPLOYEES.forEach(function(emp){
+    data[emp.id]={};
+    emp.fields.forEach(function(f){
+      var el = document.getElementById('pf-'+emp.id+'-'+f);
+      if(el) data[emp.id][f] = el.value.trim();
+    });
+  });
+  return data;
+}
+
+async function savePaie(){
+  paieData = collectPaieData();
+  if(!db){ toast('Firebase non connecte','var(--red)'); return; }
+  try{
+    await db.collection(currentShop+'_paie').doc(paieColKey()).set(paieData);
+    var sv=$('paie-saved');
+    sv.style.display='inline';
+    setTimeout(function(){ sv.style.display='none'; },2500);
+    toast('Paie '+MO_FULL[paieMonth-1]+' '+paieYear+' sauvegardee','var(--green)');
+  } catch(e){ toast('Erreur sauvegarde : '+e.message,'var(--red)'); }
+}
+
+function buildPaieText(){
+  paieData = collectPaieData();
+  var shop = SHOPS[currentShop]||{name:'SMOKE AND SMILE'};
+  var lines = [];
+  lines.push('Bonjour Salome,');
+  lines.push('');
+  lines.push('Pouvez vous me preparer les fiches de paies suivantes pour '+MO_FULL[paieMonth-1]+' '+paieYear+' ?');
+  lines.push('');
+  lines.push(shop.name+' :');
+  lines.push('');
+
+  EMPLOYEES.forEach(function(emp){
+    var d = paieData[emp.id]||{};
+    lines.push(emp.name+' :');
+    emp.fields.forEach(function(f){
+      var val = (d[f]||'').trim()||'RAS';
+      var lbl = FIELD_LABELS[f];
+      if(f==='tickets') lbl='Ticket restaurant';
+      if(f==='km')      lbl='Indemnite kilometrique';
+      lines.push(lbl+' : '+val);
+    });
+    lines.push('');
+  });
+
+  lines.push('Cordialement');
+  lines.push('Thomas MARTIN');
+  return lines.join('\n');
+}
+
+function previewPaie(){
+  var text = buildPaieText();
+  $('paie-preview-text').textContent = text;
+  var prev=$('paie-preview');
+  prev.style.display = prev.style.display==='none'?'block':'none';
+}
+
+function exportPaieDocx(){
+  paieData = collectPaieData();
+  var shop = SHOPS[currentShop]||{name:'SMOKE AND SMILE'};
+
+  var { Document, Packer, Paragraph, TextRun, AlignmentType } = docx;
+
+  function P(text, opts){
+    opts = opts||{};
+    return new Paragraph({
+      alignment: AlignmentType.LEFT,
+      spacing:{ after: opts.after!==undefined?opts.after:120 },
+      children:[new TextRun({ text:text||'', bold:opts.bold||false, size:opts.size||22, font:'Arial', color:opts.color||'000000' })]
+    });
+  }
+
+  var children=[];
+  children.push(P('Bonjour Salome,', {after:240}));
+  children.push(P('Pouvez vous me preparer les fiches de paies suivantes pour '+MO_FULL[paieMonth-1]+' '+paieYear+' ?', {after:240}));
+  children.push(P(''));
+  children.push(P(shop.name+' :', {bold:true, after:200}));
+  children.push(P(''));
+
+  EMPLOYEES.forEach(function(emp){
+    var d = paieData[emp.id]||{};
+    children.push(P(emp.name+' :', {bold:true, after:120}));
+    emp.fields.forEach(function(f){
+      var val = (d[f]||'').trim()||'RAS';
+      var lbl = FIELD_LABELS[f];
+      if(f==='tickets') lbl='Ticket restaurant';
+      if(f==='km')      lbl='Indemnite kilometrique';
+      children.push(P(lbl+' : '+val, {after:80}));
+    });
+    children.push(P(''));
+  });
+
+  children.push(P(''));
+  children.push(P('Cordialement', {after:80}));
+  children.push(P('Thomas MARTIN', {bold:true}));
+
+  var doc = new Document({
+    sections:[{
+      properties:{ page:{ size:{ width:11906, height:16838 }, margin:{top:1440,right:1440,bottom:1440,left:1440} } },
+      children: children
+    }]
+  });
+
+  Packer.toBlob(doc).then(function(blob){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'paie_'+currentShop+'_'+paieYear+'_'+String(paieMonth).padStart(2,'0')+'_'+MO_FULL[paieMonth-1]+'.docx';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Fichier Word exporte !','var(--green)');
+  });
+}
+
 // =====================================================
 // BOOT
 // =====================================================
@@ -1327,6 +1580,7 @@ window.bootApp = async function(){
     await fetchDays();
     renderAll();
     if(Object.keys(LD).length>0) toast(Object.keys(LD).length+' jours charges','var(--green)');
+    loadPaieMonth();
   } catch(e){
     sync('','Erreur chargement');
     toast('Erreur chargement : '+e.message,'var(--red)');
