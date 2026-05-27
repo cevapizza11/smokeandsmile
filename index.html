@@ -1,3 +1,66 @@
+function exportPaieDocx(){
+  paieData = collectPaieData();
+  var shop = SHOPS[currentShop] || {name:'SMOKE AND SMILE'};
+  var fname = 'paie_' + currentShop + '_' + paieYear + '_' + String(paieMonth).padStart(2,'0') + '_' + MO_FULL[paieMonth-1] + '.doc';
+
+  // Build Word-compatible HTML document
+  var lines = [];
+  lines.push('<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">');
+  lines.push('<head><meta charset="UTF-8">');
+  lines.push('<style>');
+  lines.push('body { font-family: Arial, sans-serif; font-size: 11pt; margin: 2cm; }');
+  lines.push('p { margin: 6pt 0; line-height: 1.4; }');
+  lines.push('.emp { font-weight: bold; margin-top: 14pt; margin-bottom: 4pt; }');
+  lines.push('.field { margin-left: 20pt; margin-bottom: 3pt; }');
+  lines.push('.sign { margin-top: 24pt; }');
+  lines.push('</style></head><body>');
+
+  lines.push('<p>Bonjour Salome,</p>');
+  lines.push('<p>&nbsp;</p>');
+  lines.push('<p>Pouvez vous me preparer les fiches de paies suivantes pour <strong>' + MO_FULL[paieMonth-1] + ' ' + paieYear + '</strong> ?</p>');
+  lines.push('<p>&nbsp;</p>');
+  lines.push('<p><strong>' + shop.name + ' :</strong></p>');
+  lines.push('<p>&nbsp;</p>');
+
+  for(var ei=0; ei<EMPLOYEES.length; ei++){
+    var emp = EMPLOYEES[ei];
+    var d = paieData[emp.id] || {};
+    lines.push('<p class="emp">' + emp.name + ' :</p>');
+    for(var fi=0; fi<emp.fields.length; fi++){
+      var f = emp.fields[fi];
+      var val = (d[f]||'').trim() || 'RAS';
+      var lbl = FIELD_LABELS[f];
+      if(f==='tickets') lbl = 'Ticket restaurant';
+      if(f==='km')      lbl = 'Indemnite kilometrique';
+      lines.push('<p class="field">' + lbl + ' : ' + val + '</p>');
+    }
+    lines.push('<p>&nbsp;</p>');
+  }
+
+  lines.push('<p class="sign">Cordialement,</p>');
+  lines.push('<p><strong>Thomas MARTIN</strong></p>');
+  lines.push('</body></html>');
+
+  var content = lines.join('\n');
+
+  // Create blob with Word MIME type
+  var blob = new Blob([content], {type: 'application/msword'});
+  var url  = URL.createObjectURL(blob);
+
+  // Try standard download
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = fname;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  // Revoke after short delay
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+
+  toast('Fichier ' + fname + ' telecharge !', 'var(--green)');
+}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -8,7 +71,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
