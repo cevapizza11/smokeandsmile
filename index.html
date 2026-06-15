@@ -930,7 +930,7 @@ function renderMonthDetail(mk,M){
     var wkLbls=[],wkReal=[],wkPrev=[];
     wks.forEach(function(wdays,wi){
       var wr=wdays.filter(function(ds){return LD[ds]&&LD[ds].ca>0;}).reduce(function(s,ds){return s+LD[ds].ca;},0);
-      var wp=wdays.filter(function(ds){return !LD[ds]||!LD[ds].ca;}).reduce(function(s,ds){return s+(avgDow2[dayOfWeek(ds)]||0);},0);
+      var wp=wdays.filter(function(ds){return (!LD[ds]||!LD[ds].ca)&&dayOfWeek(ds)!==0;}).reduce(function(s,ds){return s+(avgDow2[dayOfWeek(ds)]||0);},0);
       wkLbls.push('S'+(wi+1));wkReal.push(wr||null);wkPrev.push(wp||null);
     });
     dc('weekly-prev');
@@ -938,9 +938,10 @@ function renderMonthDetail(mk,M){
     if(cel){CH['weekly-prev']=new Chart(cel.getContext('2d'),{type:'bar',data:{labels:wkLbls,datasets:[{label:'Reel',data:wkReal,backgroundColor:'rgba(56,189,248,.8)',borderRadius:4},{label:'Prevision',data:wkPrev,backgroundColor:'rgba(245,158,11,.4)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}})}}}});}
     var wTblRows=wks.map(function(wdays,wi){
       var wr=wdays.filter(function(ds){return LD[ds]&&LD[ds].ca>0;}).reduce(function(s,ds){return s+LD[ds].ca;},0);
-      var wp=wdays.filter(function(ds){return !LD[ds]||!LD[ds].ca;}).reduce(function(s,ds){return s+(avgDow2[dayOfWeek(ds)]||0);},0);
+      var openFut=wdays.filter(function(ds){return (!LD[ds]||!LD[ds].ca)&&dayOfWeek(ds)!==0;});
+      var wp=openFut.reduce(function(s,ds){return s+(avgDow2[dayOfWeek(ds)]||0);},0);
       var nbR=wdays.filter(function(ds){return LD[ds]&&LD[ds].ca>0;}).length;
-      var nbP=wdays.length-nbR;
+      var nbP=openFut.length;
       return '<tr><td class="tl" style="font-weight:600">S'+(wi+1)+'</td><td class="mo" style="color:var(--blue)">'+(wr>0?fmt(wr):'—')+'</td><td class="mo" style="color:var(--muted)">'+nbR+'j</td><td class="mo" style="color:var(--amber);font-size:11px">'+(wp>0?fmt(wp):'—')+'</td><td class="mo" style="color:var(--muted)">'+nbP+'j</td><td class="mo" style="color:var(--text);font-weight:700">'+fmt(wr+wp)+'</td></tr>';
     }).join('');
     var totalR=wkReal.reduce(function(s,v){return s+(v||0);},0);
@@ -1253,10 +1254,12 @@ function avgByDayOfWeek(){
   var sums=[0,0,0,0,0,0,0], counts=[0,0,0,0,0,0,0];
   Object.keys(LD).forEach(function(ds){
     var dow=dayOfWeek(ds);
+    if(dow===0) return; // Dimanche : magasin ferme
     var ca=LD[ds].ca||0;
     if(ca>0){sums[dow]+=ca;counts[dow]++;}
   });
-  return sums.map(function(s,i){return counts[i]>0?s/counts[i]:0;});
+  // dow=0 (dimanche) reste a 0
+  return sums.map(function(s,i){return (i===0)?0:(counts[i]>0?s/counts[i]:0);});
 }
 
 // Jours d'un mois "YYYY-MM"
@@ -1300,7 +1303,9 @@ function renderPrevision(){
   var nbReal=realDays.length;
 
   // Prévision pour les jours restants basée sur les moyennes par dow
-  var caForecast=futureDays.reduce(function(s,ds){
+  // Jours restants ouverts (hors dimanches)
+  var futureDaysOpen=futureDays.filter(function(ds){return dayOfWeek(ds)!==0;});
+  var caForecast=futureDaysOpen.reduce(function(s,ds){
     var dow=dayOfWeek(ds);
     return s+(avgDow[dow]||0);
   },0);
@@ -1330,8 +1335,10 @@ function renderPrevision(){
   // Barre de progression
   if(gid('prev-progress-bar')) gid('prev-progress-bar').style.width=pctProgress+'%';
   if(gid('prev-progress-info')){
+    // Nb de jours ouverts dans le mois (hors dimanches)
+    var totalOpenDays=monthDays.filter(function(ds){return dayOfWeek(ds)!==0;}).length;
     var pace=nbReal>0?caReal/nbReal:0;
-    var projFull=pace*totalDays;
+    var projFull=pace*totalOpenDays;
     gid('prev-progress-info').innerHTML=
       'Rythme actuel : <strong style="color:var(--blue)">'+fmtS(pace)+'/j</strong>'
       +' &nbsp;|&nbsp; Projection fin de mois : <strong style="color:'+(target>0&&projFull>=target?'var(--green)':'var(--amber)')+'">'+fmt(projFull)+'</strong>'
@@ -1353,7 +1360,7 @@ function renderPrevision(){
     {l:'CA realise ('+nbReal+'j)',    v:fmt(caReal),    s:nbReal+' jours avec ventes',                                        c:'var(--blue)'},
     {l:'Prevision fin de mois',       v:fmt(caTotal),   s:'reel + '+futureDays.length+' jours projetes',                      c:'var(--amber)'},
     {l:'vs meme periode an-1',        v:memeperiodean!=null?fmt(memeperiodean):'—', s:evAn!=null?(+evAn>=0?'+':'')+evAn+'% vs '+( yr-1):'Pas de donnees '+( yr-1), c:evAn!=null&&+evAn>=0?'var(--green)':'var(--red)', b:evAn},
-    {l:'Jours restants a projeter',   v:String(futureDays.length),s:'sur '+totalDays+' jours dans le mois',                   c:'var(--muted)'}
+    {l:'Jours ouverts restants',       v:String(futureDaysOpen.length),s:'dimanches exclus ('+futureDays.length+' jours tot.)',   c:'var(--muted)'}
   ].map(function(k){return '<div class="kpi"><div class="kl">'+k.l+'</div><div class="kv" style="color:'+k.c+';font-size:'+(k.v.length>12?'13px':'17px')+'">'+k.v+(k.b!=null?chip(k.b):'')+'</div><div class="ks">'+k.s+'</div></div>';}).join('');
 
   // Chart semaine en cours
@@ -1367,7 +1374,12 @@ function renderPrevision(){
     weekDays.push(ds);
   }
   var wReal=weekDays.map(function(ds){return LD[ds]&&(LD[ds].ca||0)>0?LD[ds].ca:null;});
-  var wForecast=weekDays.map(function(ds){return avgDow[dayOfWeek(ds)]||0;});
+  // Dimanche = 0 dans avgDow, donc pas de prevision ce jour-la
+  var wForecast=weekDays.map(function(ds){
+    var dow=dayOfWeek(ds);
+    if(dow===0) return null; // ferme
+    return (LD[ds]&&(LD[ds].ca||0)>0)?null:(avgDow[dow]||0);
+  });
 
   dc('prev-week');
   var cwel=gid('c-prev-week');
@@ -1418,7 +1430,8 @@ function renderPrevision(){
   var dowData=order.map(function(d){return Math.round(avgDow[d]);});
   var dowLbls=order.map(function(d){return JOURS_COURT[d];});
   var dowCols=order.map(function(d){
-    if(d===0||d===6)return 'rgba(167,139,250,.7)'; // weekend
+    if(d===0) return 'rgba(100,116,139,.3)'; // dimanche ferme
+    if(d===6) return 'rgba(167,139,250,.7)'; // samedi
     return 'rgba(56,189,248,.7)'; // semaine
   });
   var maxDow=Math.max.apply(null,dowData.filter(function(v){return v>0;})||[1]);
@@ -1442,7 +1455,13 @@ function renderPrevision(){
     var worstIdx=dowData.filter(function(v){return v>0;});
     var worst=Math.min.apply(null,worstIdx);
     var worstDow=order[dowData.indexOf(worst)];
-    gid('prev-days-info').textContent='Meilleur jour : '+JOURS_NOMS[bestDow]+' (moy. '+fmtS(avgDow[bestDow])+')  |  Plus faible : '+JOURS_NOMS[worstDow]+' (moy. '+fmtS(avgDow[worstDow])+')';
+    // Sunday is always 0 - find best/worst among open days
+    var openDows=order.filter(function(d){return d!==0;});
+    var openData=openDows.map(function(d){return avgDow[d]||0;});
+    var maxV=Math.max.apply(null,openData), minV=Math.min.apply(null,openData.filter(function(v){return v>0;})||[0]);
+    var bestDowOpen=openDows[openData.indexOf(maxV)];
+    var worstDowOpen=openDows[openData.indexOf(minV)];
+    gid('prev-days-info').textContent='Meilleur jour : '+JOURS_NOMS[bestDowOpen]+' (moy. '+fmtS(avgDow[bestDowOpen])+')  |  Plus faible ouvert : '+JOURS_NOMS[worstDowOpen]+' (moy. '+fmtS(avgDow[worstDowOpen])+')  |  Dimanche : ferme';
   }
 }
 
