@@ -194,6 +194,7 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
     <button class="tab" data-p="compare">Comparaison</button>
     <button class="tab" data-p="monthly">Mensuel</button>
     <button class="tab" data-p="detail">Produits &amp; Clients</button>
+    <button class="tab" data-p="prevision">&#128200; Prevision</button>
     <button class="tab" data-p="paie">&#128197; Paie</button>
     <button class="tab" data-p="imports">Imports <span class="tbadge" id="ibadge">0</span></button>
   </div>
@@ -250,6 +251,11 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
       <div id="mdetail" style="display:none">
         <div class="kgrid" id="my-kpis"></div>
         <div class="card"><div class="ct">Detail jour par jour &mdash; <span id="my-title"></span></div><div style="overflow-x:auto"><table class="tbl" id="t-daily"></table></div></div>
+        <div class="card" id="card-weekly-prev">
+          <div class="ct">Prevision hebdomadaire</div>
+          <div class="cw" style="height:180px"><canvas id="c-weekly-prev"></canvas></div>
+          <div style="overflow-x:auto;margin-top:12px"><table class="tbl" id="t-weekly-prev"></table></div>
+        </div>
         <div class="card"><div class="ct">CA journalier</div><div class="cw"><canvas id="c-monthly"></canvas></div></div>
         <div class="card"><div class="ct">Top categories</div><div class="cw" style="height:190px"><canvas id="c-cats"></canvas></div></div>
         <div class="card" id="card-prods">
@@ -272,6 +278,58 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
       <div class="card"><div class="ct">Top produits</div><div style="overflow-x:auto"><table class="tbl" id="t-prods"></table></div></div>
       <div class="card"><div class="ct">Top clients</div><div style="overflow-x:auto"><table class="tbl" id="t-clients"></table></div></div>
     </div>
+
+    <!-- PREVISION -->
+    <div class="page" id="page-prevision">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+        <div><div style="font-size:18px;font-weight:800">Previsions</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Projections basees sur vos historiques</div></div>
+      </div>
+
+      <!-- Objectif mensuel -->
+      <div class="card" style="margin-bottom:12px">
+        <div class="ct">Objectif du mois en cours</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div class="paie-field" style="flex:1;min-width:180px">
+            <label>Objectif CA mensuel (euros)</label>
+            <input type="number" id="prev-target" placeholder="Ex: 30000" min="0" step="100" oninput="renderPrevision()"/>
+          </div>
+          <div id="prev-target-info" style="font-size:12px;color:var(--muted);flex:2;min-width:200px"></div>
+        </div>
+      </div>
+
+      <!-- KPIs de projection -->
+      <div class="kgrid" id="prev-kpis"></div>
+
+      <!-- Projection pace -->
+      <div class="card">
+        <div class="ct">Projection au rythme actuel</div>
+        <div style="height:16px;background:var(--bg2);border-radius:8px;overflow:hidden;margin-bottom:10px">
+          <div id="prev-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--blue),#0ea5e9);border-radius:8px;transition:width .5s;width:0%"></div>
+        </div>
+        <div id="prev-progress-info" style="font-size:11px;color:var(--muted)"></div>
+      </div>
+
+      <!-- Semaine en cours -->
+      <div class="card">
+        <div class="ct">Semaine en cours — reel vs prevision</div>
+        <div class="cw"><canvas id="c-prev-week"></canvas></div>
+      </div>
+
+      <!-- Tableau semaines du mois -->
+      <div class="card">
+        <div class="ct">Detail par semaine <span id="prev-month-lbl"></span></div>
+        <div style="overflow-x:auto"><table class="tbl" id="t-prev-weeks"></table></div>
+      </div>
+
+      <!-- Patterns jour de semaine -->
+      <div class="card">
+        <div class="ct">Profil jour de semaine (historique)</div>
+        <div class="cw" style="height:200px"><canvas id="c-prev-days"></canvas></div>
+        <div id="prev-days-info" style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center"></div>
+      </div>
+
+    </div>
+
 
     <!-- PAIE -->
     <div class="page" id="page-paie">
@@ -863,6 +921,34 @@ function renderMonthDetail(mk,M){
   dc('cats');
   CH['cats']=new Chart(gid('c-cats').getContext('2d'),{type:'bar',data:{labels:cats.map(function(c){return c[0].length>15?c[0].slice(0,14)+'...':c[0];}),datasets:[{data:cats.map(function(c){return c[1];}),backgroundColor:CC,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}})},y:{grid:{display:false},ticks:TICK}}}});
 
+  // ── WEEKLY FORECAST IN MONTHLY
+  (function(){
+    var avgDow2=avgByDayOfWeek();
+    var allMonthDays=daysInMonth(mk);
+    var wks=[],tmp=[];
+    allMonthDays.forEach(function(ds){tmp.push(ds);if(tmp.length===7||ds===allMonthDays[allMonthDays.length-1]){wks.push(tmp);tmp=[];}});
+    var wkLbls=[],wkReal=[],wkPrev=[];
+    wks.forEach(function(wdays,wi){
+      var wr=wdays.filter(function(ds){return LD[ds]&&LD[ds].ca>0;}).reduce(function(s,ds){return s+LD[ds].ca;},0);
+      var wp=wdays.filter(function(ds){return !LD[ds]||!LD[ds].ca;}).reduce(function(s,ds){return s+(avgDow2[dayOfWeek(ds)]||0);},0);
+      wkLbls.push('S'+(wi+1));wkReal.push(wr||null);wkPrev.push(wp||null);
+    });
+    dc('weekly-prev');
+    var cel=gid('c-weekly-prev');
+    if(cel){CH['weekly-prev']=new Chart(cel.getContext('2d'),{type:'bar',data:{labels:wkLbls,datasets:[{label:'Reel',data:wkReal,backgroundColor:'rgba(56,189,248,.8)',borderRadius:4},{label:'Prevision',data:wkPrev,backgroundColor:'rgba(245,158,11,.4)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}})}}}});}
+    var wTblRows=wks.map(function(wdays,wi){
+      var wr=wdays.filter(function(ds){return LD[ds]&&LD[ds].ca>0;}).reduce(function(s,ds){return s+LD[ds].ca;},0);
+      var wp=wdays.filter(function(ds){return !LD[ds]||!LD[ds].ca;}).reduce(function(s,ds){return s+(avgDow2[dayOfWeek(ds)]||0);},0);
+      var nbR=wdays.filter(function(ds){return LD[ds]&&LD[ds].ca>0;}).length;
+      var nbP=wdays.length-nbR;
+      return '<tr><td class="tl" style="font-weight:600">S'+(wi+1)+'</td><td class="mo" style="color:var(--blue)">'+(wr>0?fmt(wr):'—')+'</td><td class="mo" style="color:var(--muted)">'+nbR+'j</td><td class="mo" style="color:var(--amber);font-size:11px">'+(wp>0?fmt(wp):'—')+'</td><td class="mo" style="color:var(--muted)">'+nbP+'j</td><td class="mo" style="color:var(--text);font-weight:700">'+fmt(wr+wp)+'</td></tr>';
+    }).join('');
+    var totalR=wkReal.reduce(function(s,v){return s+(v||0);},0);
+    var totalP=wkPrev.reduce(function(s,v){return s+(v||0);},0);
+    gid('t-weekly-prev').innerHTML='<thead><tr><th class="tl">Sem.</th><th>CA reel</th><th>Jours</th><th>CA prevision</th><th>Jours</th><th>Total</th></tr></thead><tbody>'+wTblRows+'</tbody><tfoot><tr style="border-top:1px solid var(--b2)"><td class="tl" style="font-weight:700">Total</td><td class="mo" style="color:var(--blue);font-weight:700">'+fmt(totalR)+'</td><td></td><td class="mo" style="color:var(--amber);font-weight:700">'+fmt(totalP)+'</td><td></td><td class="mo" style="color:var(--green);font-weight:700">'+fmt(totalR+totalP)+'</td></tr></tfoot>';
+    gid('card-weekly-prev').style.display='block';
+  })();
+
   var allP={};
   dk.forEach(function(ds){Object.keys(LD[ds].prods||{}).forEach(function(p){if(!allP[p])allP[p]=0;allP[p]+=(LD[ds].prods[p].ca||0);});});
   var prodList=Object.keys(allP).map(function(p){return{name:p,total:allP[p]};}).sort(function(a,b){return b.total-a.total;}).slice(0,20);
@@ -1119,6 +1205,7 @@ document.querySelectorAll('.tab').forEach(function(btn){
     if(pg==='compare') try{initCmpDates();}catch(e){console.error(e);}
     if(pg==='monthly') try{renderMonthly();}catch(e){console.error(e);}
     if(pg==='detail')  try{renderDetail();}catch(e){console.error(e);}
+    if(pg==='prevision') try{renderPrevision();}catch(e){console.error(e);}
     if(pg==='paie')    try{loadPaieMonth();}catch(e){console.error(e);}
     if(pg==='imports') try{renderImports();}catch(e){console.error(e);}
   });
@@ -1139,9 +1226,223 @@ function renderAll(){
       if(pg==='compare') try{renderComparison();}catch(e){console.error(e);}
       if(pg==='monthly') try{renderMonthly();}catch(e){console.error(e);}
       if(pg==='detail')  try{renderDetail();}catch(e){console.error(e);}
-      if(pg==='paie')    try{loadPaieMonth();}catch(e){console.error(e);}
+      if(pg==='prevision') try{renderPrevision();}catch(e){console.error(e);}
+    if(pg==='paie')    try{loadPaieMonth();}catch(e){console.error(e);}
       if(pg==='imports') try{renderImports();}catch(e){console.error(e);}
     }
+  }
+}
+
+
+// =====================================================
+// PREVISION
+// =====================================================
+
+var JOURS_NOMS = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+var JOURS_COURT = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+
+// Calcule le jour de semaine d'une date ds "YYYY-MM-DD"
+function dayOfWeek(ds){
+  var parts = ds.split('-');
+  var d = new Date(+parts[0], +parts[1]-1, +parts[2]);
+  return d.getDay(); // 0=Dim, 1=Lun...6=Sam
+}
+
+// Moyenne CA par jour de semaine sur tout l'historique
+function avgByDayOfWeek(){
+  var sums=[0,0,0,0,0,0,0], counts=[0,0,0,0,0,0,0];
+  Object.keys(LD).forEach(function(ds){
+    var dow=dayOfWeek(ds);
+    var ca=LD[ds].ca||0;
+    if(ca>0){sums[dow]+=ca;counts[dow]++;}
+  });
+  return sums.map(function(s,i){return counts[i]>0?s/counts[i]:0;});
+}
+
+// Jours d'un mois "YYYY-MM"
+function daysInMonth(mk){
+  var yr=+mk.slice(0,4), mo=+mk.slice(5,7);
+  var total=new Date(yr,mo,0).getDate();
+  var days=[];
+  for(var d=1;d<=total;d++) days.push(mk+'-'+String(d).padStart(2,'0'));
+  return days;
+}
+
+// Vrai aujourd'hui YYYY-MM-DD (approx. basé sur dernière date connue)
+function getTodayApprox(){
+  var keys=Object.keys(LD).sort();
+  if(!keys.length) return null;
+  return keys[keys.length-1]; // derniere date avec données = approx aujourd'hui
+}
+
+function renderPrevision(){
+  var allDates=Object.keys(LD).sort();
+  if(!allDates.length){
+    gid('prev-kpis').innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:20px;font-size:12px">Importez des donnees pour voir les previsions.</div>';
+    return;
+  }
+
+  // Mois en cours = dernier mois avec données
+  var todayDs=allDates[allDates.length-1];
+  var currentMk=todayDs.slice(0,7);
+  var yr=+currentMk.slice(0,4), mo=+currentMk.slice(5,7);
+
+  gid('prev-month-lbl').textContent='— '+MO[mo-1]+' '+yr;
+
+  var avgDow=avgByDayOfWeek();
+  var monthDays=daysInMonth(currentMk);
+  var totalDays=monthDays.length;
+
+  // Données réelles du mois
+  var realDays=monthDays.filter(function(ds){return LD[ds]&&(LD[ds].ca||0)>0;});
+  var futureDays=monthDays.filter(function(ds){return !LD[ds]||(LD[ds].ca||0)===0;});
+  var caReal=realDays.reduce(function(s,ds){return s+(LD[ds].ca||0);},0);
+  var nbReal=realDays.length;
+
+  // Prévision pour les jours restants basée sur les moyennes par dow
+  var caForecast=futureDays.reduce(function(s,ds){
+    var dow=dayOfWeek(ds);
+    return s+(avgDow[dow]||0);
+  },0);
+  var caTotal=caReal+caForecast;
+
+  // Objectif
+  var target=+(gid('prev-target')||{}).value||0;
+  var pctProgress=target>0?Math.min(100,(caReal/target)*100):0;
+  var pctTotal=target>0?Math.min(200,(caTotal/target)*100):0;
+
+  // Info objectif
+  if(gid('prev-target-info')){
+    if(target>0){
+      var reste=target-caReal;
+      var joursRestants=futureDays.length;
+      var needed=joursRestants>0?reste/joursRestants:0;
+      gid('prev-target-info').innerHTML=
+        'CA realise : <strong style="color:var(--blue)">'+fmt(caReal)+'</strong> / objectif <strong>'+fmt(target)+'</strong><br>'
+        +'Reste a faire : <strong style="color:'+(reste>0?'var(--amber)':'var(--green)')+'">'+fmt(Math.max(0,reste))+'</strong>'
+        +' sur '+joursRestants+' jours'
+        +(joursRestants>0&&reste>0?' — soit <strong style="color:var(--amber)">'+fmtS(needed)+'/j</strong> en moyenne':'');
+    } else {
+      gid('prev-target-info').innerHTML='<span style="color:var(--muted)">Saisissez un objectif mensuel pour voir votre progression.</span>';
+    }
+  }
+
+  // Barre de progression
+  if(gid('prev-progress-bar')) gid('prev-progress-bar').style.width=pctProgress+'%';
+  if(gid('prev-progress-info')){
+    var pace=nbReal>0?caReal/nbReal:0;
+    var projFull=pace*totalDays;
+    gid('prev-progress-info').innerHTML=
+      'Rythme actuel : <strong style="color:var(--blue)">'+fmtS(pace)+'/j</strong>'
+      +' &nbsp;|&nbsp; Projection fin de mois : <strong style="color:'+(target>0&&projFull>=target?'var(--green)':'var(--amber)')+'">'+fmt(projFull)+'</strong>'
+      +(target>0?' &nbsp;|&nbsp; Objectif : '+Math.round(pctProgress)+'% atteint':'');
+  }
+
+  // KPIs
+  var memeperiodean=null;
+  var prevYrMk=(yr-1)+'-'+String(mo).padStart(2,'0');
+  var prevYrDays=Object.keys(LD).filter(function(ds){return ds.startsWith(prevYrMk);});
+  if(prevYrDays.length>0){
+    // Meme nb de jours que l'annee précédente
+    var prevSameNb=prevYrDays.slice(0,nbReal);
+    memeperiodean=prevSameNb.reduce(function(s,ds){return s+(LD[ds].ca||0);},0);
+  }
+  var evAn=dif(caReal,memeperiodean);
+
+  gid('prev-kpis').innerHTML=[
+    {l:'CA realise ('+nbReal+'j)',    v:fmt(caReal),    s:nbReal+' jours avec ventes',                                        c:'var(--blue)'},
+    {l:'Prevision fin de mois',       v:fmt(caTotal),   s:'reel + '+futureDays.length+' jours projetes',                      c:'var(--amber)'},
+    {l:'vs meme periode an-1',        v:memeperiodean!=null?fmt(memeperiodean):'—', s:evAn!=null?(+evAn>=0?'+':'')+evAn+'% vs '+( yr-1):'Pas de donnees '+( yr-1), c:evAn!=null&&+evAn>=0?'var(--green)':'var(--red)', b:evAn},
+    {l:'Jours restants a projeter',   v:String(futureDays.length),s:'sur '+totalDays+' jours dans le mois',                   c:'var(--muted)'}
+  ].map(function(k){return '<div class="kpi"><div class="kl">'+k.l+'</div><div class="kv" style="color:'+k.c+';font-size:'+(k.v.length>12?'13px':'17px')+'">'+k.v+(k.b!=null?chip(k.b):'')+'</div><div class="ks">'+k.s+'</div></div>';}).join('');
+
+  // Chart semaine en cours
+  // Trouver la semaine contenant todayDs
+  var todayDow=dayOfWeek(todayDs);
+  var weekStart=new Date(+yr,mo-1,+todayDs.slice(8)-todayDow);
+  var weekDays=[];
+  for(var i=0;i<7;i++){
+    var d=new Date(weekStart);d.setDate(d.getDate()+i);
+    var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    weekDays.push(ds);
+  }
+  var wReal=weekDays.map(function(ds){return LD[ds]&&(LD[ds].ca||0)>0?LD[ds].ca:null;});
+  var wForecast=weekDays.map(function(ds){return avgDow[dayOfWeek(ds)]||0;});
+
+  dc('prev-week');
+  var cwel=gid('c-prev-week');
+  if(cwel){
+    CH['prev-week']=new Chart(cwel.getContext('2d'),{type:'bar',
+      data:{labels:weekDays.map(function(ds){return JOURS_COURT[dayOfWeek(ds)]+' '+ds.slice(8)+'/'+ds.slice(5,7);}),datasets:[
+        {label:'Reel',data:wReal,backgroundColor:'rgba(56,189,248,.8)',borderRadius:4},
+        {label:'Prevision',data:wForecast,backgroundColor:'rgba(245,158,11,.35)',borderRadius:4,borderColor:'rgba(245,158,11,.6)',borderWidth:1}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},
+        scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}})}}}
+    });
+  }
+
+  // Tableau semaines du mois
+  var weeks=[];
+  var wk=[];
+  monthDays.forEach(function(ds){
+    wk.push(ds);
+    if(wk.length===7||ds===monthDays[monthDays.length-1]){weeks.push(wk);wk=[];}
+  });
+  var wRows='<thead><tr><th class="tl">Semaine</th><th>Dates</th><th>CA reel</th><th>CA prevision</th><th>Total proj.</th><th>% objectif sem.</th></tr></thead><tbody>';
+  var weekTarget=target>0?target/(totalDays/7):0;
+  weeks.forEach(function(wdays,wi){
+    var wRealCA=wdays.filter(function(ds){return LD[ds]&&LD[ds].ca>0;}).reduce(function(s,ds){return s+LD[ds].ca;},0);
+    var wProjCA=wdays.filter(function(ds){return !LD[ds]||!LD[ds].ca;}).reduce(function(s,ds){return s+(avgDow[dayOfWeek(ds)]||0);},0);
+    var wTotal=wRealCA+wProjCA;
+    var wPct=weekTarget>0?Math.round((wTotal/weekTarget)*100):null;
+    var first=wdays[0],last=wdays[wdays.length-1];
+    var pctCol=wPct===null?'var(--muted)':(wPct>=100?'var(--green)':wPct>=80?'var(--amber)':'var(--red)');
+    wRows+='<tr>'
+      +'<td class="tl" style="font-weight:600">S'+(wi+1)+'</td>'
+      +'<td class="mo" style="color:var(--muted);font-size:11px">'+first.slice(8)+'/'+first.slice(5,7)+' - '+last.slice(8)+'/'+last.slice(5,7)+'</td>'
+      +'<td class="mo" style="color:var(--blue)">'+(wRealCA>0?fmt(wRealCA):'—')+'</td>'
+      +'<td class="mo" style="color:var(--amber);font-size:11px">'+(wProjCA>0?fmt(wProjCA):'—')+'</td>'
+      +'<td class="mo" style="color:var(--text);font-weight:700">'+fmt(wTotal)+'</td>'
+      +'<td class="mo" style="color:'+pctCol+';font-weight:700">'+(wPct!==null?wPct+'%':'—')+'</td>'
+      +'</tr>';
+  });
+  wRows+='<tr style="border-top:1px solid var(--b2)"><td class="tl" style="font-weight:700">TOTAL</td><td class="mo" style="color:var(--muted);font-size:11px">'+MO[mo-1]+' '+yr+'</td><td class="mo" style="color:var(--blue);font-weight:700">'+fmt(caReal)+'</td><td class="mo" style="color:var(--amber);font-weight:700">'+fmt(caForecast)+'</td><td class="mo" style="color:var(--green);font-weight:700">'+fmt(caTotal)+'</td><td class="mo" style="color:'+(target>0&&caTotal>=target?'var(--green)':'var(--amber)')+';font-weight:700">'+(target>0?Math.round((caTotal/target)*100)+'%':'—')+'</td></tr>';
+  wRows+='</tbody>';
+  gid('t-prev-weeks').innerHTML=wRows;
+
+  // Chart profil jour de semaine
+  var dowLabels=JOURS_NOMS.map(function(j,i){return JOURS_COURT[i];});
+  // Reorder: Mon-Sun for display
+  var order=[1,2,3,4,5,6,0]; // Lun=1 ... Sam=6, Dim=0
+  var dowData=order.map(function(d){return Math.round(avgDow[d]);});
+  var dowLbls=order.map(function(d){return JOURS_COURT[d];});
+  var dowCols=order.map(function(d){
+    if(d===0||d===6)return 'rgba(167,139,250,.7)'; // weekend
+    return 'rgba(56,189,248,.7)'; // semaine
+  });
+  var maxDow=Math.max.apply(null,dowData.filter(function(v){return v>0;})||[1]);
+
+  dc('prev-days');
+  var cdel=gid('c-prev-days');
+  if(cdel&&maxDow>0){
+    CH['prev-days']=new Chart(cdel.getContext('2d'),{type:'bar',
+      data:{labels:dowLbls,datasets:[{
+        label:'CA moyen historique',
+        data:dowData,
+        backgroundColor:dowCols,
+        borderRadius:4
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:function(ctx){return ' Moy. '+fmtS(ctx.raw)+'/j';}}}},
+        scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}})}}}
+    });
+    // Trouver le meilleur et pire jour
+    var bestDow=order[dowData.indexOf(Math.max.apply(null,dowData.filter(function(v){return v>0;})))];
+    var worstIdx=dowData.filter(function(v){return v>0;});
+    var worst=Math.min.apply(null,worstIdx);
+    var worstDow=order[dowData.indexOf(worst)];
+    gid('prev-days-info').textContent='Meilleur jour : '+JOURS_NOMS[bestDow]+' (moy. '+fmtS(avgDow[bestDow])+')  |  Plus faible : '+JOURS_NOMS[worstDow]+' (moy. '+fmtS(avgDow[worstDow])+')';
   }
 }
 
