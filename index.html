@@ -196,6 +196,7 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
     <button class="tab" data-p="detail">Produits &amp; Clients</button>
     <button class="tab" data-p="prevision">&#128200; Prevision</button>
     <button class="tab" data-p="paie">&#128197; Paie</button>
+    <button class="tab" data-p="employes">&#128101; Employes</button>
     <button class="tab" data-p="imports">Imports <span class="tbadge" id="ibadge">0</span></button>
   </div>
   <div id="content">
@@ -354,6 +355,46 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
       </div>
     </div>
 
+    <!-- EMPLOYES -->
+    <div class="page" id="page-employes">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:18px;font-weight:800">Gestion des employes</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Utilises dans les fiches de paie</div>
+        </div>
+        <button class="hbtn primary" onclick="openEmpModal(null)">+ Ajouter un employe</button>
+      </div>
+      <div id="emp-list"></div>
+    </div>
+
+    <!-- MODAL EMPLOYE -->
+    <div class="modal-bg" id="modal-emp">
+      <div class="modal">
+        <div style="font-size:20px;margin-bottom:6px">&#128100;</div>
+        <h3 id="em-title">Ajouter un employe</h3>
+        <div class="msub">Les modifications sont appliquees aux prochaines fiches de paie</div>
+        <div class="merr" id="em-err"></div>
+        <div class="fg"><label>Prenom et Nom</label><input type="text" id="em-name" placeholder="Ex: David Spanedda"/></div>
+        <div class="fg">
+          <label>Champs de la fiche de paie</label>
+          <div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--bg2);border:1px solid var(--b);border-radius:8px">
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer"><input type="checkbox" id="ef-vacances" style="accent-color:var(--blue)"/> Vacances (dates)</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer"><input type="checkbox" id="ef-prime" style="accent-color:var(--blue)"/> Prime</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer"><input type="checkbox" id="ef-absence" style="accent-color:var(--blue)"/> Absence</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer"><input type="checkbox" id="ef-tickets" style="accent-color:var(--blue)"/> Ticket restaurant</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer"><input type="checkbox" id="ef-km" style="accent-color:var(--blue)"/> Indemnite kilometrique</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer"><input type="checkbox" id="ef-notes" style="accent-color:var(--blue)"/> Notes / autres</label>
+          </div>
+        </div>
+        <div class="mactions">
+          <button class="mbtn cancel" onclick="closeEmpModal()">Annuler</button>
+          <button class="mbtn del" id="em-delbtn" style="display:none" onclick="deleteEmp()">Supprimer</button>
+          <button class="mbtn" onclick="saveEmp()">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+
+
     <!-- IMPORTS -->
     <div class="page" id="page-imports">
       <div class="card" style="margin-bottom:12px">
@@ -411,7 +452,7 @@ body{display:flex;flex-direction:column;overflow-x:hidden;}
 // CONFIG & STATE
 // =====================================================
 var FB_CFG={apiKey:"AIzaSyCp2uhejjBiIvYzk7RWmc6GF4Vdi4X0A9Q",authDomain:"smokeandsmile.firebaseapp.com",projectId:"smokeandsmile",storageBucket:"smokeandsmile.firebasestorage.app",messagingSenderId:"344160852761",appId:"1:344160852761:web:51f9f43a13d07228dac388"};
-var PWD_HASH='e0b44ff85e15124aa08c875f0bd34152d6b49cfe31154dbe57edd78ef9e3664d';
+var PWD_HASH='826e1eeaf19001bc84180dfca2ccce2e2c94e55923cde35d92d84eb0ac583f20';
 var AUTH_KEY='ss_auth';
 var SHOP_KEY='ss_shop';
 var SHOPS={ss:{name:'SMOKE & SMILE',sub:'GESTION - NARBONNE',icon:'💨'},mb:{name:'LA MARMITE BLEUE',sub:'GESTION - ST-PIERRE-LA-MER',icon:'🫕'}};
@@ -1207,6 +1248,7 @@ document.querySelectorAll('.tab').forEach(function(btn){
     if(pg==='monthly') try{renderMonthly();}catch(e){console.error(e);}
     if(pg==='detail')  try{renderDetail();}catch(e){console.error(e);}
     if(pg==='prevision') try{renderPrevision();}catch(e){console.error(e);}
+    if(pg==='employes') try{renderEmpList();}catch(e){console.error(e);}
     if(pg==='paie')    try{loadPaieMonth();}catch(e){console.error(e);}
     if(pg==='imports') try{renderImports();}catch(e){console.error(e);}
   });
@@ -1228,6 +1270,7 @@ function renderAll(){
       if(pg==='monthly') try{renderMonthly();}catch(e){console.error(e);}
       if(pg==='detail')  try{renderDetail();}catch(e){console.error(e);}
       if(pg==='prevision') try{renderPrevision();}catch(e){console.error(e);}
+    if(pg==='employes') try{renderEmpList();}catch(e){console.error(e);}
     if(pg==='paie')    try{loadPaieMonth();}catch(e){console.error(e);}
       if(pg==='imports') try{renderImports();}catch(e){console.error(e);}
     }
@@ -1465,6 +1508,127 @@ function renderPrevision(){
   }
 }
 
+
+// =====================================================
+// EMPLOYES
+// =====================================================
+var ALL_FIELDS = ['vacances','prime','absence','tickets','km','notes'];
+var FIELD_LABELS_ALL = {vacances:'Vacances (dates)',prime:'Prime',absence:'Absence',tickets:'Ticket restaurant',km:'Indemnite kilometrique',notes:'Notes / autres'};
+
+// Load employees from Firebase or fallback to defaults
+var empEditId = null;
+
+async function loadEmployees(){
+  if(!db) return;
+  try{
+    var doc = await db.collection(currentShop+'_config').doc('employees').get();
+    if(doc.exists && doc.data().list && doc.data().list.length){
+      EMPLOYEES = doc.data().list;
+    }
+    // Sync FLABELS
+    FLABELS = FIELD_LABELS_ALL;
+  }catch(e){ console.error('loadEmployees:',e); }
+}
+
+async function saveEmployees(){
+  if(!db) return;
+  try{
+    await db.collection(currentShop+'_config').doc('employees').set({list: EMPLOYEES});
+  }catch(e){ console.error('saveEmployees:',e); }
+}
+
+function renderEmpList(){
+  var el = gid('emp-list');
+  if(!el) return;
+  if(!EMPLOYEES.length){
+    el.innerHTML='<p style="color:var(--muted);font-size:12px;text-align:center;padding:24px">Aucun employe configure.</p>';
+    return;
+  }
+  el.innerHTML = EMPLOYEES.map(function(emp, i){
+    var fieldNames = (emp.fields||[]).map(function(f){ return FIELD_LABELS_ALL[f]||f; });
+    return '<div class="emp-card" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:10px">'
+      +'<div style="width:38px;height:38px;background:linear-gradient(135deg,var(--blue),#0ea5e9);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#128100;</div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px">'+emp.name+'</div>'
+      +'<div style="font-size:10px;color:var(--muted);line-height:1.6">Champs : <span style="color:var(--blue)">'+( fieldNames.join(', ')||'—')+'</span></div>'
+      +'</div>'
+      +'<div style="display:flex;gap:7px;flex-shrink:0">'
+      +'<button class="hbtn" onclick="moveEmp('+i+',-1)" title="Monter" style="padding:4px 9px">&#8593;</button>'
+      +'<button class="hbtn" onclick="moveEmp('+i+',1)" title="Descendre" style="padding:4px 9px">&#8595;</button>'
+      +'<button class="hbtn primary" onclick="openEmpModal('+i+')">Modifier</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function moveEmp(idx, dir){
+  var newIdx = idx + dir;
+  if(newIdx < 0 || newIdx >= EMPLOYEES.length) return;
+  var tmp = EMPLOYEES[idx];
+  EMPLOYEES[idx] = EMPLOYEES[newIdx];
+  EMPLOYEES[newIdx] = tmp;
+  saveEmployees();
+  renderEmpList();
+}
+
+function openEmpModal(idx){
+  empEditId = (idx !== null && idx >= 0) ? idx : null;
+  var isEdit = empEditId !== null;
+  gid('em-title').textContent = isEdit ? 'Modifier '+EMPLOYEES[empEditId].name : 'Ajouter un employe';
+  gid('em-err').style.display = 'none';
+  gid('em-delbtn').style.display = isEdit ? 'block' : 'none';
+
+  // Reset all checkboxes
+  ALL_FIELDS.forEach(function(f){ var el=gid('ef-'+f); if(el) el.checked=false; });
+  gid('em-name').value = '';
+
+  if(isEdit){
+    var emp = EMPLOYEES[empEditId];
+    gid('em-name').value = emp.name || '';
+    (emp.fields||[]).forEach(function(f){ var el=gid('ef-'+f); if(el) el.checked=true; });
+  } else {
+    // Default: check all fields
+    ALL_FIELDS.forEach(function(f){ var el=gid('ef-'+f); if(el) el.checked=true; });
+  }
+  gid('modal-emp').classList.add('open');
+}
+
+function closeEmpModal(){
+  gid('modal-emp').classList.remove('open');
+  empEditId = null;
+}
+
+function saveEmp(){
+  var name = (gid('em-name').value||'').trim();
+  if(!name){ gid('em-err').textContent='Saisir un nom.'; gid('em-err').style.display='block'; return; }
+  var fields = ALL_FIELDS.filter(function(f){ var el=gid('ef-'+f); return el&&el.checked; });
+  if(!fields.length){ gid('em-err').textContent='Selectionner au moins un champ.'; gid('em-err').style.display='block'; return; }
+
+  var id = name.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,20)+'_'+Date.now().toString().slice(-4);
+  var entry = {id: empEditId!==null?EMPLOYEES[empEditId].id:id, name:name, fields:fields};
+
+  if(empEditId !== null) EMPLOYEES[empEditId] = entry;
+  else EMPLOYEES.push(entry);
+
+  saveEmployees();
+  closeEmpModal();
+  renderEmpList();
+  toast('Employe '+(empEditId!==null?'mis a jour':'ajoute'),'var(--green)');
+}
+
+function deleteEmp(){
+  if(empEditId===null) return;
+  var name = EMPLOYEES[empEditId].name;
+  if(!confirm('Supprimer '+name+' ?')) return;
+  EMPLOYEES.splice(empEditId,1);
+  saveEmployees();
+  closeEmpModal();
+  renderEmpList();
+  toast('Employe supprime','var(--red)');
+}
+
+gid('modal-emp').addEventListener('click',function(e){ if(e.target===gid('modal-emp')) closeEmpModal(); });
+
 // =====================================================
 // BOOT
 // =====================================================
@@ -1476,7 +1640,9 @@ window.bootApp=async function(){
   try{
     await fetchDays();
     renderAll();
+    await loadEmployees();
     loadPaieMonth();
+    renderEmpList();
     if(Object.keys(LD).length>0)toast(Object.keys(LD).length+' jours charges','var(--green)');
   }catch(e){sync('','Erreur chargement');toast('Erreur : '+e.message,'var(--red)');console.error(e);}
 };
