@@ -1,1652 +1,534 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Gestion · Smoke & Smile</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moule & Smile — Saint-Pierre-la-Mer | Moules-frites à volonté</title>
+<meta name="description" content="Moule & Smile, moules-frites et calamars à volonté à Saint-Pierre-la-Mer. Service continu 8h–23h, de mai à septembre.">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Restaurant",
+  "name": "Moule & Smile",
+  "servesCuisine": "Moules-frites à volonté",
+  "priceRange": "€€",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "1 Boulevard de la Douane",
+    "addressLocality": "Saint-Pierre-la-Mer, Fleury-d'Aude",
+    "postalCode": "11560",
+    "addressCountry": "FR"
+  }
+}
+</script>
+
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
-*{box-sizing:border-box;margin:0;padding:0;}
-:root{--bg:#020c1a;--bg2:#0a1628;--bg3:#0f1f35;--b:rgba(56,189,248,.15);--b2:rgba(56,189,248,.3);--blue:#38bdf8;--amber:#f59e0b;--red:#f43f5e;--green:#4ade80;--purple:#a78bfa;--text:#e2e8f0;--muted:#64748b;--dim:#334155;--f:'Syne',sans-serif;--m:'JetBrains Mono',monospace;}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f);}
-body{display:flex;flex-direction:column;overflow-x:hidden;}
-::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
-#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#020817,#0a1628);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;}
-.lbox{background:rgba(15,23,42,.97);border:1px solid var(--b2);border-radius:16px;padding:28px 24px;width:100%;max-width:400px;text-align:center;}
-.shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px;}
-.shop-card{border:2px solid var(--b);border-radius:12px;padding:14px 8px;cursor:pointer;transition:all .2s;}
-.shop-ss{border-color:var(--blue);background:rgba(56,189,248,.1);}
-.shop-mb{border-color:var(--b);}
-.shop-icon{font-size:26px;margin-bottom:6px;}
-.shop-name{font-size:11px;font-weight:700;line-height:1.3;}
-.shop-sub{font-size:9px;color:var(--muted);margin-top:2px;}
-.pwd-wrap{position:relative;margin-bottom:12px;}
-.pwd-wrap input{width:100%;background:var(--bg2);border:1.5px solid var(--b);border-radius:10px;color:var(--text);font-family:var(--m);font-size:16px;padding:12px 42px 12px 16px;outline:none;text-align:center;letter-spacing:.1em;}
-.pwd-wrap input:focus{border-color:var(--b2);}
-.eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;}
-.lbtn{width:100%;background:linear-gradient(135deg,var(--blue),#0ea5e9);border:none;border-radius:10px;color:#fff;font-family:var(--f);font-size:14px;font-weight:700;padding:12px;cursor:pointer;margin-bottom:8px;}
-.lerr{color:var(--red);font-size:11px;min-height:16px;margin-bottom:6px;}
-.lremember{display:flex;align-items:center;justify-content:center;gap:7px;font-size:11px;color:var(--muted);cursor:pointer;}
-.lremember input{accent-color:var(--blue);}
-#app{display:none;flex-direction:column;height:100%;}
-#header{position:sticky;top:0;z-index:100;background:rgba(2,12,26,.97);border-bottom:1px solid var(--b);padding:0 16px;display:flex;align-items:center;gap:10px;min-height:52px;flex-wrap:wrap;}
-.logo{display:flex;align-items:center;gap:9px;flex-shrink:0;}
-.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),#0ea5e9);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
-.logo-name{font-weight:800;font-size:14px;}
-.logo-sub{font-size:9px;color:var(--muted);letter-spacing:.1em;}
-.hbtn{background:none;border:1px solid var(--b);border-radius:8px;color:var(--muted);font-family:var(--f);font-size:10px;padding:5px 10px;cursor:pointer;flex-shrink:0;white-space:nowrap;}
-.hbtn:hover{color:var(--text);border-color:var(--b2);}
-.hbtn.primary{background:rgba(56,189,248,.1);border-color:var(--b2);color:var(--blue);font-weight:700;}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);}
-.sync-dot.ok{background:var(--green);}
-.sync-dot.sy{background:var(--amber);animation:pulse .8s infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.sync-info{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--muted);font-family:var(--m);}
-.file-label{display:flex;align-items:center;gap:7px;background:rgba(56,189,248,.08);border:1.5px dashed var(--b2);border-radius:9px;padding:6px 12px;cursor:pointer;flex-shrink:0;}
-.file-label:hover{background:rgba(56,189,248,.14);border-color:var(--blue);}
-.file-label span{font-size:10px;font-weight:700;color:var(--blue);}
-#tabs{display:flex;padding:0 16px;border-bottom:1px solid var(--b);overflow-x:auto;background:var(--bg);flex-shrink:0;}
-#tabs::-webkit-scrollbar{height:0;}
-.tab{background:none;border:none;cursor:pointer;font-family:var(--f);font-size:12px;color:var(--muted);padding:10px 12px;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;}
-.tab:hover{color:var(--blue);}
-.tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:700;}
-.tbadge{background:rgba(56,189,248,.15);color:var(--blue);border-radius:10px;padding:1px 5px;font-size:9px;font-weight:700;margin-left:4px;}
-#content{flex:1;overflow-y:auto;padding:14px 16px;}
-.page{display:none;}.page.on{display:block;}
-.card{background:rgba(15,23,42,.9);border:1px solid var(--b);border-radius:12px;padding:16px 18px;margin-bottom:12px;}
-.ct{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--blue);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
-.ct::before{content:'';display:inline-block;width:3px;height:12px;background:var(--blue);border-radius:2px;flex-shrink:0;}
-.kgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;}
-@media(min-width:560px){.kgrid{grid-template-columns:repeat(4,1fr);}}
-.kpi{background:rgba(15,23,42,.9);border:1px solid var(--b);border-radius:12px;padding:12px 14px;}
-.kl{font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;}
-.kv{font-family:var(--m);font-size:17px;font-weight:700;margin-bottom:2px;line-height:1.2;}
-.ks{font-size:10px;color:var(--muted);}
-.chip{font-size:10px;font-weight:700;margin-left:5px;}
-.chip.up{color:var(--green);}
-.chip.dn{color:var(--red);}
-.tbl{width:100%;border-collapse:collapse;font-size:12px;}
-.tbl th{text-align:right;padding:6px 8px;font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--b);font-weight:600;}
-.tbl th.tl{text-align:left;}
-.tbl td{padding:7px 8px;text-align:right;border-bottom:1px solid rgba(56,189,248,.04);}
-.tbl td.tl{text-align:left;}
-.tbl tr:hover td{background:rgba(56,189,248,.04);}
-.mo{font-family:var(--m);}
-.cw{position:relative;height:220px;}
-@media(min-width:600px){.cw{height:256px;}}
-.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
-@media(min-width:480px){.mgrid{grid-template-columns:repeat(4,1fr);}}
-@media(min-width:700px){.mgrid{grid-template-columns:repeat(6,1fr);}}
-.mcell{background:rgba(15,23,42,.7);border:1px solid var(--b);border-radius:10px;padding:9px 6px;cursor:pointer;text-align:center;transition:all .2s;}
-.mcell:hover{border-color:var(--b2);}
-.mcell.has{border-color:rgba(56,189,248,.22);}
-.mcell.sel{border-color:var(--blue);background:rgba(56,189,248,.08);}
-.mcell.empty{opacity:.3;pointer-events:none;}
-.mcell .mn{font-size:11px;font-weight:700;}
-.mcell .mv{font-family:var(--m);font-size:11px;color:var(--blue);margin-top:3px;}
-.mcell .mj{font-size:9px;color:var(--muted);}
-.ypills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
-.ypill{background:none;border:1.5px solid var(--b);border-radius:20px;color:var(--muted);font-family:var(--f);font-size:11px;font-weight:600;padding:4px 13px;cursor:pointer;transition:all .2s;}
-.ypill:hover{border-color:var(--b2);}
-.cpill{background:none;border:1px solid var(--b);border-radius:14px;color:var(--muted);font-family:var(--f);font-size:10px;padding:3px 10px;cursor:pointer;}
-.cpill:hover{border-color:var(--b2);color:var(--text);}
-.modal-bg{position:fixed;inset:0;background:rgba(2,12,26,.88);z-index:600;display:none;align-items:center;justify-content:center;padding:16px;}
-.modal-bg.open{display:flex;}
-.modal{background:var(--bg3);border:1px solid var(--b2);border-radius:14px;padding:22px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto;}
-.modal h3{font-size:15px;font-weight:800;margin-bottom:4px;}
-.msub{font-size:10px;color:var(--muted);margin-bottom:18px;}
-.fg{display:flex;flex-direction:column;gap:3px;margin-bottom:12px;}
-.fg label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
-.fg input,.fg textarea{background:var(--bg2);border:1px solid var(--b);border-radius:8px;color:var(--text);font-family:var(--m);font-size:14px;padding:9px 11px;outline:none;width:100%;}
-.fg input:focus,.fg textarea:focus{border-color:var(--b2);}
-.fg textarea{resize:vertical;min-height:52px;font-size:12px;}
-.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.mactions{display:flex;gap:8px;margin-top:16px;}
-.mbtn{flex:1;background:linear-gradient(135deg,var(--blue),#0ea5e9);border:none;border-radius:9px;color:#fff;font-family:var(--f);font-size:12px;font-weight:700;padding:10px;cursor:pointer;}
-.mbtn.cancel{background:none;border:1px solid var(--b);color:var(--muted);}
-.mbtn.del{background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.3);color:var(--red);}
-.merr{color:var(--red);font-size:11px;display:none;margin-bottom:8px;}
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--bg3);border:1px solid var(--b2);border-radius:10px;padding:10px 20px;font-size:13px;z-index:999;transition:transform .3s;pointer-events:none;white-space:nowrap;}
-#toast.show{transform:translateX(-50%) translateY(0);}
-#prog{position:fixed;top:0;left:0;right:0;height:3px;z-index:300;}
-#pb{height:3px;background:linear-gradient(90deg,var(--blue),#0ea5e9);width:0%;transition:width .3s;}
-.iitem{border:1px solid var(--b);border-radius:9px;padding:10px 13px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px;}
-.idot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
-.ititle{font-size:12px;font-weight:600;}
-.isub{font-size:10px;color:var(--muted);margin-top:1px;}
-.ichip{font-size:9px;padding:1px 6px;border-radius:5px;font-weight:700;margin-left:5px;}
-.idel{background:none;border:none;cursor:pointer;color:var(--dim);font-size:13px;}
-.idel:hover{color:var(--red);}
-#empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:65vh;gap:20px;text-align:center;padding:20px;}
-.drop-area{border:2px dashed var(--b2);border-radius:14px;padding:28px 32px;cursor:pointer;transition:all .2s;width:100%;max-width:380px;}
-.drop-area:hover{border-color:var(--blue);background:rgba(56,189,248,.06);}
-.emp-card{background:rgba(15,23,42,.9);border:1px solid var(--b);border-radius:12px;padding:16px 18px;margin-bottom:14px;}
-.paie-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-@media(min-width:600px){.paie-grid{grid-template-columns:repeat(3,1fr);}}
-.paie-field{display:flex;flex-direction:column;gap:3px;}
-.paie-field label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
-.paie-field input,.paie-field textarea{background:var(--bg2);border:1px solid var(--b);border-radius:8px;color:var(--text);font-family:var(--m);font-size:13px;padding:8px 10px;outline:none;width:100%;}
-.paie-field input:focus,.paie-field textarea:focus{border-color:var(--b2);}
-.paie-field textarea{resize:vertical;min-height:52px;font-size:12px;}
-.paie-field.full{grid-column:1/-1;}
-.month-nav{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
-.month-nav button{background:none;border:1px solid var(--b);border-radius:8px;color:var(--muted);font-family:var(--f);font-size:13px;padding:6px 14px;cursor:pointer;}
-.month-nav button:hover{color:var(--text);border-color:var(--b2);}
-.month-nav .cur{font-family:var(--m);font-size:16px;font-weight:700;color:var(--text);min-width:140px;text-align:center;}
-.paie-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
-.pbtn{background:linear-gradient(135deg,var(--blue),#0ea5e9);border:none;border-radius:9px;color:#fff;font-family:var(--f);font-size:13px;font-weight:700;padding:10px 20px;cursor:pointer;}
-.pbtn.sec{background:rgba(56,189,248,.1);border:1px solid var(--b2);color:var(--blue);}
-.psaved{font-size:11px;color:var(--green);display:none;}
+:root{
+  --bg:#0b0a08;
+  --surface:#16130d;
+  --surface-alt:#1c1810;
+  --line:#322b1c;
+  --gold:#e2a929;
+  --gold-deep:#93711b;
+  --text:#f5efe2;
+  --text-muted:#a89a7e;
+  --font-display:'Cormorant Garamond',serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+/* ─── NAV ─── */
+header.nav{
+  position:sticky;top:0;z-index:50;
+  background:rgba(11,10,8,0.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.nav-inner{
+  max-width:1080px;margin:0 auto;padding:8px 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+}
+.brand img{height:72px;display:block}
+@media(max-width:640px){.brand img{height:52px}}
+.nav-links{display:flex;align-items:center;gap:22px}
+.nav-links a{font-family:var(--font-mono);font-size:0.8rem;color:var(--text-muted)}
+.nav-links a:hover{color:var(--gold)}
+.nav-cta{
+  font-family:var(--font-mono);font-size:0.76rem;
+  color:var(--bg)!important;background:var(--gold);
+  padding:9px 16px;border-radius:999px;white-space:nowrap;
+}
+.nav-cta:hover{opacity:.88}
+@media(max-width:640px){.nav-links{display:none}}
+
+/* ─── HERO ─── */
+.hero{position:relative;padding:80px 0 72px;overflow:hidden;border-bottom:1px solid var(--line)}
+.wave{position:absolute;pointer-events:none}
+.wave.w1{top:-40px;right:-60px;width:380px;opacity:.07}
+.wave.w2{bottom:-90px;left:-70px;width:300px;opacity:.05}
+.eyebrow{
+  font-family:var(--font-mono);font-size:0.78rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:18px;display:flex;align-items:center;gap:10px;
+}
+.eyebrow::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px 2px var(--gold)}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(2.4rem,5.6vw,4rem);line-height:1.08;max-width:18ch}
+h1 em{font-style:normal;color:var(--gold)}
+h2{font-family:var(--font-display);font-weight:700;font-size:clamp(1.7rem,3.4vw,2.4rem)}
+h2 em{font-style:italic;color:var(--gold)}
+h3{font-family:var(--font-display);font-weight:700;font-size:1.15rem;margin-bottom:6px}
+.hero-sub{margin-top:20px;max-width:50ch;color:var(--text-muted);font-size:1.06rem}
+.hero-meta{margin-top:32px;display:flex;flex-wrap:wrap;gap:28px}
+.meta-item{font-family:var(--font-mono);font-size:0.86rem;color:var(--text-muted)}
+.meta-item b{display:block;color:var(--text);font-family:var(--font-body);font-weight:600;font-size:0.95rem;margin-bottom:2px}
+.hero-cta{margin-top:36px;display:flex;gap:14px;flex-wrap:wrap}
+
+/* ─── BOUTONS ─── */
+.btn{
+  font-family:var(--font-body);font-weight:600;font-size:0.95rem;
+  padding:14px 26px;border-radius:10px;
+  display:inline-flex;align-items:center;gap:10px;
+  transition:transform .15s ease;
+}
+.btn-primary{background:var(--gold);color:#1a1509}
+.btn-primary:hover{transform:translateY(-2px)}
+.btn-ghost{border:1px solid var(--line);color:var(--text);background:var(--surface)}
+.btn-ghost:hover{border-color:var(--gold-deep);transform:translateY(-2px)}
+
+/* ─── SECTIONS ─── */
+section{padding:66px 0;border-bottom:1px solid var(--line)}
+.section-head{margin-bottom:40px;max-width:60ch}
+.section-label{
+  font-family:var(--font-mono);font-size:0.75rem;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--gold);margin-bottom:10px;
+}
+.section-sub{color:var(--text-muted);margin-top:10px}
+
+/* ─── FORMULES ─── */
+.formule-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+.formule-card{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:28px 24px;display:flex;flex-direction:column;gap:6px;
+}
+.formule-card.featured{border-color:var(--gold-deep)}
+.formule-badge{
+  font-family:var(--font-mono);font-size:0.68rem;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--gold);margin-bottom:4px;
+}
+.formule-name{font-family:var(--font-display);font-weight:700;font-size:1.25rem;line-height:1.1}
+.formule-desc{color:var(--text-muted);font-size:0.88rem;flex:1;margin-top:4px}
+.formule-price{
+  font-family:var(--font-mono);color:var(--gold);
+  font-size:1.5rem;font-weight:500;
+  margin-top:auto;padding-top:16px;
+  border-top:1px solid var(--line);
+}
+.formule-price small{font-size:.82rem;color:var(--text-muted)}
+
+/* ─── SAUCES ─── */
+.sauce-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+.sauce-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 16px}
+.sauce-num{font-family:var(--font-mono);color:var(--gold-deep);font-size:0.78rem;margin-bottom:6px}
+.sauce-name{font-family:var(--font-display);font-weight:700;font-size:1.05rem;margin-bottom:4px}
+.sauce-desc{color:var(--text-muted);font-size:0.84rem}
+
+/* ─── SDM ─── */
+.sdm-card{
+  background:var(--surface-alt);border:1px solid var(--gold-deep);
+  border-radius:14px;padding:32px 36px;max-width:560px;
+}
+.sdm-label{
+  font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--gold);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.sdm-label::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px 2px var(--gold)}
+.sdm-name{font-family:var(--font-display);font-weight:700;font-size:1.7rem;margin-bottom:10px}
+.sdm-desc{color:var(--text-muted);font-size:0.94rem}
+
+/* ─── CONCEPT ─── */
+.why-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:28px}
+.why-item{display:flex;gap:16px;align-items:flex-start}
+.why-num{font-family:var(--font-mono);color:var(--gold-deep);font-size:0.85rem;padding-top:3px;flex-shrink:0}
+.why-item p{color:var(--text-muted);font-size:0.92rem}
+
+/* ─── HORAIRES ─── */
+.practical{display:grid;grid-template-columns:1.1fr 1fr;gap:48px}
+@media(max-width:780px){.practical{grid-template-columns:1fr}}
+.slots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:20px}
+.slot-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 18px}
+.slot-time{font-family:var(--font-mono);color:var(--gold);font-size:0.8rem;margin-bottom:8px}
+.slot-name{font-family:var(--font-display);font-weight:700;font-size:1.1rem;margin-bottom:4px}
+.slot-desc{color:var(--text-muted);font-size:0.85rem}
+ul.services{list-style:none;margin-top:22px;display:flex;flex-wrap:wrap;gap:10px}
+ul.services li{
+  font-family:var(--font-mono);font-size:0.76rem;
+  border:1px solid var(--line);border-radius:999px;
+  padding:7px 14px;color:var(--text-muted);
+}
+
+/* ─── CARTE / MAP ─── */
+.map-frame{border-radius:16px;overflow:hidden;border:1px solid var(--line);height:380px}
+.map-frame iframe{width:100%;height:100%;border:0;filter:grayscale(.2) sepia(.15) contrast(.92) invert(.9)}
+.map-details{margin-top:20px;display:flex;flex-wrap:wrap;gap:32px;align-items:center;justify-content:space-between}
+.address-block b{font-family:var(--font-display);font-size:1.1rem;display:block;margin-bottom:4px}
+.address-block span{color:var(--text-muted);font-family:var(--font-mono);font-size:0.86rem}
+
+/* ─── FOOTER ─── */
+footer{padding:44px 0}
+.footer-inner{
+  display:flex;flex-wrap:wrap;justify-content:space-between;
+  gap:20px;align-items:center;
+}
+.footer-brand{display:flex;align-items:center;gap:10px}
+.footer-brand img{height:40px;border-radius:50%;opacity:.85}
+.footer-brand-name{font-family:var(--font-display);font-weight:700;font-size:1.15rem}
+.footer-links{display:flex;gap:22px;flex-wrap:wrap;font-size:0.88rem;color:var(--text-muted)}
+.footer-links a:hover{color:var(--gold)}
+.footer-sep{border:0;border-top:1px solid var(--line);margin:16px 0}
+.build-tag{font-family:var(--font-mono);font-size:0.66rem;color:#5c5439}
+.footer-copy{font-size:0.82rem;color:var(--text-muted)}
 </style>
 </head>
 <body>
-<div id="prog"><div id="pb"></div></div>
-<div id="toast"></div>
 
-<div id="login-screen">
-  <div class="lbox">
-    <div style="font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--muted);margin-bottom:18px;text-transform:uppercase">Choisir l'etablissement</div>
-    <div class="shop-grid">
-      <div class="shop-card shop-ss" id="card-ss" onclick="pickShop('ss')">
-        <div class="shop-icon">&#x1F4A8;</div>
-        <div class="shop-name" style="color:var(--blue)">Smoke &amp; Smile</div>
-        <div class="shop-sub">Narbonne</div>
-      </div>
-      <div class="shop-card" id="card-mb" onclick="pickShop('mb')">
-        <div class="shop-icon">&#x1FAD5;</div>
-        <div class="shop-name" style="color:var(--amber)">La Marmite Bleue</div>
-        <div class="shop-sub">Saint-Pierre-la-Mer</div>
-      </div>
+<!-- ═══════════════ NAV ═══════════════ -->
+<header class="nav">
+  <div class="nav-inner">
+    <div class="brand">
+      <!-- Logo : remplacer src par data:image/png;base64,... quand le fichier PNG est disponible -->
+      <img src="logo-moule-smile-circle.png" alt="Moule & Smile" id="site-logo"
+           onerror="this.style.display='none'">
     </div>
-    <div class="pwd-wrap">
-      <input type="password" id="pwd" placeholder="Mot de passe" autocomplete="current-password"/>
-      <button class="eye" id="eye">&#128065;</button>
-    </div>
-    <button class="lbtn" id="loginbtn">Connexion</button>
-    <div class="lerr" id="lerr"></div>
-    <label class="lremember">
-      <input type="checkbox" id="remember" checked/> Rester connecte sur cet appareil
-    </label>
-  </div>
-</div>
-
-<div id="app">
-  <div id="header">
-    <div class="logo">
-      <div class="logo-icon" id="h-icon">&#x1F4A8;</div>
-      <div><div class="logo-name" id="h-name">SMOKE &amp; SMILE</div><div class="logo-sub" id="h-sub">GESTION &middot; NARBONNE</div></div>
-    </div>
-    <div class="sync-info"><div class="sync-dot" id="sdot"></div><span id="stxt"></span></div>
-    <input type="file" id="fi-main" accept=".xlsx,.xls" style="display:none" onchange="onFileChange(this)"/>
-    <label for="fi-main" class="file-label" style="margin-left:auto">
-      <span style="font-size:17px">&#128194;</span><span>Importer .xlsx</span>
-    </label>
-    <button class="hbtn primary" onclick="openModal(null)">+ Saisie</button>
-    <button class="hbtn" onclick="switchShop()">&#8644; Changer</button>
-    <button class="hbtn" id="btn-logout" onclick="doLogout()">Deconnexion</button>
-  </div>
-  <div id="tabs">
-    <button class="tab on" data-p="annual">Annuel</button>
-    <button class="tab" data-p="compare">Comparaison</button>
-    <button class="tab" data-p="monthly">Mensuel</button>
-    <button class="tab" data-p="detail">Produits &amp; Clients</button>
-    <button class="tab" data-p="prevision">&#128200; Prevision</button>
-    <button class="tab" data-p="paie">&#128197; Paie</button>
-    <button class="tab" data-p="employes">&#128101; Employes</button>
-    <button class="tab" data-p="imports">Imports <span class="tbadge" id="ibadge">0</span></button>
-  </div>
-  <div id="content">
-
-    <!-- ANNUAL -->
-    <div class="page on" id="page-annual">
-      <div class="ypills" id="ay-pills"></div>
-      <div class="kgrid" id="ay-kpis"></div>
-      <div class="card"><div class="ct">CA mensuel <span id="ay-title"></span></div><div class="cw"><canvas id="c-annual"></canvas></div></div>
-      <div class="card"><div class="ct">Repartition paiements</div><div class="cw" style="height:160px"><canvas id="c-pay"></canvas></div></div>
-      <div class="card"><div class="ct">Recap mensuel</div><div style="overflow-x:auto"><table class="tbl" id="t-annual"></table></div></div>
-    </div>
-
-    <!-- COMPARE -->
-    <div class="page" id="page-compare">
-      <div class="card" style="margin-bottom:14px">
-        <div class="ct">Choisir les periodes a comparer</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-          <div style="background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.2);border-radius:10px;padding:12px">
-            <div style="font-size:10px;font-weight:700;color:var(--blue);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Periode 1</div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <div class="paie-field"><label>Du</label><input type="date" id="p1f" oninput="triggerCmp()"/></div>
-              <div class="paie-field"><label>Au</label><input type="date" id="p1t" oninput="triggerCmp()"/></div>
-            </div>
-          </div>
-          <div style="background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:12px">
-            <div style="font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Periode 2</div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <div class="paie-field"><label>Du</label><input type="date" id="p2f" oninput="triggerCmp()"/></div>
-              <div class="paie-field"><label>Au</label><input type="date" id="p2t" oninput="triggerCmp()"/></div>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:10px;color:var(--muted)">Raccourcis :</span>
-          <div id="cmp-chips" style="display:flex;gap:5px;flex-wrap:wrap"></div>
-        </div>
-        <div id="cmp-info" style="font-size:11px;color:var(--muted);margin-top:10px;min-height:16px"></div>
-      </div>
-      <div id="cmp-empty" style="text-align:center;padding:32px;color:var(--muted);font-size:13px">Selectionne deux periodes pour lancer la comparaison.</div>
-      <div id="cmp-results" style="display:none">
-        <div class="kgrid" id="cmp-kpis"></div>
-        <div class="card"><div class="ct">CA par jour</div><div class="cw"><canvas id="c-cmp"></canvas></div></div>
-        <div class="card"><div class="ct">Top categories</div><div class="cw" style="height:190px"><canvas id="c-cmpcat"></canvas></div></div>
-        <div class="card"><div class="ct">Detail</div><div style="overflow-x:auto"><table class="tbl" id="t-cmp"></table></div></div>
-      </div>
-    </div>
-
-    <!-- MONTHLY -->
-    <div class="page" id="page-monthly">
-      <div class="ypills" id="my-pills"></div>
-      <div class="mgrid" id="mgrid"></div>
-      <div id="mdetail" style="display:none">
-        <div class="kgrid" id="my-kpis"></div>
-        <div class="card"><div class="ct">Detail jour par jour &mdash; <span id="my-title"></span></div><div style="overflow-x:auto"><table class="tbl" id="t-daily"></table></div></div>
-        <div class="card" id="card-weekly-prev">
-          <div class="ct">Prevision hebdomadaire</div>
-          <div class="cw" style="height:180px"><canvas id="c-weekly-prev"></canvas></div>
-          <div style="overflow-x:auto;margin-top:12px"><table class="tbl" id="t-weekly-prev"></table></div>
-        </div>
-        <div class="card"><div class="ct">CA journalier</div><div class="cw"><canvas id="c-monthly"></canvas></div></div>
-        <div class="card"><div class="ct">Top categories</div><div class="cw" style="height:190px"><canvas id="c-cats"></canvas></div></div>
-        <div class="card" id="card-prods">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-            <div class="ct" style="margin-bottom:0">Ventes produits &mdash; <span id="my-title2"></span></div>
-            <div style="display:flex;gap:6px">
-              <button id="pv-day" onclick="setProdView('day')" class="hbtn primary" style="font-size:10px">Par jour</button>
-              <button id="pv-tot" onclick="setProdView('tot')" class="hbtn" style="font-size:10px">Total mois</button>
-            </div>
-          </div>
-          <div id="pv-day-tbl" style="overflow-x:auto"><table class="tbl" id="t-prods-day"></table></div>
-          <div id="pv-tot-tbl" style="display:none;overflow-x:auto"><table class="tbl" id="t-prods-tot"></table></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- DETAIL -->
-    <div class="page" id="page-detail">
-      <div class="ypills" id="dy-pills"></div>
-      <div class="card"><div class="ct">Top produits</div><div style="overflow-x:auto"><table class="tbl" id="t-prods"></table></div></div>
-      <div class="card"><div class="ct">Top clients</div><div style="overflow-x:auto"><table class="tbl" id="t-clients"></table></div></div>
-    </div>
-
-    <!-- PREVISION -->
-    <div class="page" id="page-prevision">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
-        <div><div style="font-size:18px;font-weight:800">Previsions</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Projections basees sur vos historiques</div></div>
-      </div>
-
-      <!-- Objectif mensuel -->
-      <div class="card" style="margin-bottom:12px">
-        <div class="ct">Objectif du mois en cours</div>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <div class="paie-field" style="flex:1;min-width:180px">
-            <label>Objectif CA mensuel (euros)</label>
-            <input type="number" id="prev-target" placeholder="Ex: 30000" min="0" step="100" oninput="renderPrevision()"/>
-          </div>
-          <div id="prev-target-info" style="font-size:12px;color:var(--muted);flex:2;min-width:200px"></div>
-        </div>
-      </div>
-
-      <!-- KPIs de projection -->
-      <div class="kgrid" id="prev-kpis"></div>
-
-      <!-- Projection pace -->
-      <div class="card">
-        <div class="ct">Projection au rythme actuel</div>
-        <div style="height:16px;background:var(--bg2);border-radius:8px;overflow:hidden;margin-bottom:10px">
-          <div id="prev-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--blue),#0ea5e9);border-radius:8px;transition:width .5s;width:0%"></div>
-        </div>
-        <div id="prev-progress-info" style="font-size:11px;color:var(--muted)"></div>
-      </div>
-
-      <!-- Semaine en cours -->
-      <div class="card">
-        <div class="ct">Semaine en cours — reel vs prevision</div>
-        <div class="cw"><canvas id="c-prev-week"></canvas></div>
-      </div>
-
-      <!-- Tableau semaines du mois -->
-      <div class="card">
-        <div class="ct">Detail par semaine <span id="prev-month-lbl"></span></div>
-        <div style="overflow-x:auto"><table class="tbl" id="t-prev-weeks"></table></div>
-      </div>
-
-      <!-- Patterns jour de semaine -->
-      <div class="card">
-        <div class="ct">Profil jour de semaine (historique)</div>
-        <div class="cw" style="height:200px"><canvas id="c-prev-days"></canvas></div>
-        <div id="prev-days-info" style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center"></div>
-      </div>
-
-    </div>
-
-
-    <!-- PAIE -->
-    <div class="page" id="page-paie">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
-        <div><div style="font-size:18px;font-weight:800">Preparation de paie</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Informations mensuelles pour la comptable</div></div>
-        <div style="font-size:11px;color:var(--muted)">Destinataire : <strong style="color:var(--text)">Salome</strong></div>
-      </div>
-      <div class="month-nav">
-        <button onclick="paieMonthMove(-1)">&#8592;</button>
-        <div class="cur" id="paie-month-lbl">Mai 2026</div>
-        <button onclick="paieMonthMove(1)">&#8594;</button>
-        <button class="hbtn primary" onclick="savePaie()">&#128190; Sauvegarder</button>
-        <span class="psaved" id="paie-saved">&#10003; Sauvegarde</span>
-      </div>
-      <div id="paie-employees"></div>
-      <div class="paie-actions">
-        <button class="pbtn" onclick="exportPaieDoc()">&#128196; Exporter Word (.doc)</button>
-        <button class="pbtn sec" onclick="previewPaie()">&#128065; Apercu</button>
-      </div>
-      <div id="paie-preview" style="display:none;margin-top:16px">
-        <div class="card"><div class="ct">Apercu du message</div><pre id="paie-preview-text" style="font-family:var(--f);font-size:12px;color:var(--text);white-space:pre-wrap;line-height:1.7"></pre></div>
-      </div>
-    </div>
-
-    <!-- EMPLOYES -->
-    <div class="page" id="page-employes">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
-        <div>
-          <div style="font-size:18px;font-weight:800">Gestion des employes</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">Utilises dans les fiches de paie</div>
-        </div>
-        <button class="hbtn primary" onclick="openEmpModal(null)">+ Ajouter un employe</button>
-      </div>
-      <div id="emp-list"></div>
-    </div>
-
-    <!-- MODAL EMPLOYE -->
-    <div class="modal-bg" id="modal-emp">
-      <div class="modal">
-        <div style="font-size:20px;margin-bottom:6px">&#128100;</div>
-        <h3 id="em-title">Ajouter un employe</h3>
-        <div class="msub">Les modifications sont appliquees aux prochaines fiches de paie</div>
-        <div class="merr" id="em-err"></div>
-        <div class="fg"><label>Prenom et Nom</label><input type="text" id="em-name" placeholder="Ex: David Spanedda"/></div>
-        <div class="fg">
-          <label>Champs de la fiche de paie</label>
-          <div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--bg2);border:1px solid var(--b);border-radius:8px">
-            <label style="display:flex;align-items:center;gap:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer"><input type="checkbox" id="ef-vacances" style="accent-color:var(--blue)"/> Vacances (dates)</label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer"><input type="checkbox" id="ef-prime" style="accent-color:var(--blue)"/> Prime</label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer"><input type="checkbox" id="ef-absence" style="accent-color:var(--blue)"/> Absence</label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer"><input type="checkbox" id="ef-tickets" style="accent-color:var(--blue)"/> Ticket restaurant</label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer"><input type="checkbox" id="ef-km" style="accent-color:var(--blue)"/> Indemnite kilometrique</label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--text);cursor:pointer"><input type="checkbox" id="ef-notes" style="accent-color:var(--blue)"/> Notes / autres</label>
-          </div>
-        </div>
-        <div class="mactions">
-          <button class="mbtn cancel" onclick="closeEmpModal()">Annuler</button>
-          <button class="mbtn del" id="em-delbtn" style="display:none" onclick="deleteEmp()">Supprimer</button>
-          <button class="mbtn" onclick="saveEmp()">Enregistrer</button>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- IMPORTS -->
-    <div class="page" id="page-imports">
-      <div class="card" style="margin-bottom:12px">
-        <div class="ct">Logique de fusion</div>
-        <p style="font-size:12px;color:var(--muted);line-height:1.7">Chaque import est fusionne par date.<br>Date existante : <strong style="color:var(--amber)">mise a jour</strong>. Date absente du fichier : <strong style="color:var(--text)">conservee</strong>.</p>
-      </div>
-      <div class="card"><div class="ct">Historique</div><div id="ilist"></div></div>
-      <div style="text-align:center;margin-top:14px">
-        <button onclick="resetAll()" class="hbtn" style="color:var(--red);border-color:rgba(244,63,94,.3)">Effacer toutes les donnees</button>
-      </div>
-    </div>
-
-    <!-- EMPTY -->
-    <div id="empty-state" style="display:none">
-      <div style="font-size:44px">&#128230;</div>
-      <h2 id="empty-title" style="font-size:20px;font-weight:800">Aucune donnee</h2>
-      <p id="empty-sync" style="font-size:12px;color:var(--muted)">Connexion Firebase en cours...</p>
-      <input type="file" id="fi-empty" accept=".xlsx,.xls" style="display:none" onchange="onFileChange(this)"/>
-      <label for="fi-empty" class="drop-area">
-        <div style="font-size:32px;margin-bottom:10px">&#128194;</div>
-        <div style="font-size:13px;font-weight:700;color:#94a3b8">Clique ici pour importer ton fichier</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px">.xlsx exporte depuis ta caisse</div>
-      </label>
-    </div>
-
-  </div>
-</div>
-
-<div class="modal-bg" id="modal">
-  <div class="modal">
-    <div style="font-size:20px;margin-bottom:6px">&#9999;&#65039;</div>
-    <h3 id="m-title">Ajouter un jour</h3>
-    <div class="msub" id="m-sub">Saisie manuelle synchronisee</div>
-    <div class="merr" id="m-err"></div>
-    <div class="fg"><label>Date</label><input type="date" id="m-date"/></div>
-    <div class="frow">
-      <div class="fg"><label>CA Total (euros)</label><input type="number" id="m-ca" placeholder="0.00" step="0.01" min="0" oninput="updateRecap()"/></div>
-      <div class="fg"><label>Nb transactions</label><input type="number" id="m-tx" placeholder="0" min="0" oninput="updateRecap()"/></div>
-    </div>
-    <div class="frow">
-      <div class="fg"><label>CB (euros)</label><input type="number" id="m-cb" placeholder="0.00" step="0.01" min="0" oninput="updateRecap()"/></div>
-      <div class="fg"><label>Especes (euros)</label><input type="number" id="m-esp" placeholder="0.00" step="0.01" min="0" oninput="updateRecap()"/></div>
-    </div>
-    <div style="background:rgba(56,189,248,.04);border:1px solid var(--b);border-radius:8px;padding:9px 12px;font-family:var(--m);font-size:11px;color:var(--muted)" id="m-recap">Remplissez les champs ci-dessus</div>
-    <div class="mactions">
-      <button class="mbtn cancel" onclick="closeModal()">Annuler</button>
-      <button class="mbtn del" id="m-delbtn" style="display:none" onclick="deleteDayManual()">Suppr.</button>
-      <button class="mbtn" onclick="saveDay()">Enregistrer</button>
+    <div class="nav-links">
+      <a href="#formule">La carte</a>
+      <a href="#sauces">Sauces</a>
+      <a href="#infos">Horaires</a>
+      <a href="#acces">Accès</a>
+      <a class="nav-cta" href="#acces">Ouverture mars 2027 →</a>
     </div>
   </div>
-</div>
+</header>
 
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="hero">
+  <svg class="wave w1" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,100 Q50,60 100,100 T200,100 T300,100 T400,100" stroke="#e2a929" stroke-width="3" fill="none"/>
+    <path d="M0,140 Q50,100 100,140 T200,140 T300,140 T400,140" stroke="#e2a929" stroke-width="2" fill="none"/>
+  </svg>
+  <svg class="wave w2" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,100 Q50,60 100,100 T200,100 T300,100 T400,100" stroke="#e2a929" stroke-width="3" fill="none"/>
+  </svg>
+  <div class="wrap">
+    <div class="eyebrow">Saint-Pierre-la-Mer · Ouverture 1er mars 2027</div>
+    <h1>Moules & calamars <em>à volonté,</em> face à la Méditerranée</h1>
+    <p class="hero-sub">Frites fraîches coupées chaque matin, moules et calamars cuisinés à la minute — jamais réchauffés. Service continu de 8h à 23h, en terrasse ou en salle.</p>
+    <div class="hero-meta">
+      <div class="meta-item"><b>1 Boulevard de la Douane</b>11560 Saint-Pierre-la-Mer</div>
+      <div class="meta-item"><b>8h – 23h</b>Mai – Septembre : 7j/7</div>
+      <div class="meta-item"><b>Mars, Avril, Octobre</b>Ouvert les week-ends</div>
+      <div class="meta-item"><b>257 places</b>115 salle + 142 terrasse</div>
+    </div>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#formule">Voir la carte</a>
+      <a class="btn btn-ghost" href="#acces">Infos pratiques</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FORMULES ═══════════════ -->
+<section id="formule">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-label">La carte</div>
+      <h2>Un prix, <em>à volonté.</em></h2>
+      <p class="section-sub">Moules ou calamars avec frites maison incluses — resservez-vous autant de fois que vous voulez.</p>
+    </div>
+    <div class="formule-grid">
+
+      <div class="formule-card featured" id="fc-moules">
+        <div class="formule-badge">Adulte</div>
+        <div class="formule-name" id="fc-moules-name">Moules Frites à volonté</div>
+        <div class="formule-desc">Moules fraîches cuisinées minute, 6 sauces maison au choix, frites maison. Resservez-vous.</div>
+        <div class="formule-price" id="fc-moules-price">19,90€</div>
+      </div>
+
+      <div class="formule-card featured" id="fc-calamars">
+        <div class="formule-badge">Adulte</div>
+        <div class="formule-name" id="fc-calamars-name">Calamars Frites à volonté</div>
+        <div class="formule-desc">Calamars tendres cuisinés minute, frites maison, mêmes sauces qu'avec les moules.</div>
+        <div class="formule-price" id="fc-calamars-price">19,90€</div>
+      </div>
+
+      <div class="formule-card" id="fc-fish">
+        <div class="formule-badge">Alternatif</div>
+        <div class="formule-name" id="fc-fish-name">Fish & Chips</div>
+        <div class="formule-desc">Filet pané maison, frites fraîches, sauce tartare. La valeur sûre pour ceux qui hésitent.</div>
+        <div class="formule-price" id="fc-fish-price">15,90€</div>
+      </div>
+
+      <div class="formule-card" id="fc-enfant">
+        <div class="formule-badge">Enfants</div>
+        <div class="formule-name">Menu Enfant</div>
+        <div class="formule-desc" id="enfant-desc">Moules ou calamars à volonté pour les 6–17 ans. Les tout-petits mangent avec vous, gratuitement.</div>
+        <div class="formule-price">
+          <span id="enfant-tranche1-label">0 – 5 ans</span> : <span id="enfant-tranche1-price">Gratuit</span><br>
+          <small><span id="enfant-tranche2-label">6 – 17 ans</span> : <span id="enfant-tranche2-price">15,90€</span></small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ SAUCES ═══════════════ -->
+<section id="sauces">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-label">Les sauces</div>
+      <h2>Six sauces <em>maison.</em></h2>
+      <p class="section-sub">Toutes préparées sur place. Choisissez à chaque marmite, changez à volonté.</p>
+    </div>
+    <div class="sauce-grid" id="sg-grid">
+      <div class="sauce-card"><div class="sauce-num">01</div><div class="sauce-name">Marinière</div><div class="sauce-desc">Vin blanc, échalote, persil — la classique indémodable.</div></div>
+      <div class="sauce-card"><div class="sauce-num">02</div><div class="sauce-name">Crème Échalote</div><div class="sauce-desc">Crème fraîche, échalotes dorées, touche de vin blanc.</div></div>
+      <div class="sauce-card"><div class="sauce-num">03</div><div class="sauce-name">Roquefort</div><div class="sauce-desc">Crème, roquefort fondu, noix de muscade.</div></div>
+      <div class="sauce-card"><div class="sauce-num">04</div><div class="sauce-name">Curry</div><div class="sauce-desc">Lait de coco, curry doux, coriandre fraîche.</div></div>
+      <div class="sauce-card"><div class="sauce-num">05</div><div class="sauce-name">Tomate Chorizo</div><div class="sauce-desc">Sauce tomate relevée, chorizo ibérique, paprika fumé.</div></div>
+      <div class="sauce-card"><div class="sauce-num">06</div><div class="sauce-name">Provençale</div><div class="sauce-desc">Tomates, herbes de Provence, ail, huile d'olive.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ SAUCE DU MOMENT ═══════════════ -->
+<section id="sdm">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-label">Création du chef</div>
+      <h2>La sauce <em>du moment.</em></h2>
+      <p class="section-sub">Une création éphémère qui change régulièrement, selon la saison et l'inspiration.</p>
+    </div>
+    <div class="sdm-card" id="sdm-block">
+      <div class="sdm-label">Cette semaine</div>
+      <div class="sdm-name" id="sdm-body-txt">À découvrir sur place</div>
+      <div class="sdm-desc">Notre sauce du moment change régulièrement — revenez souvent !</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CONCEPT ═══════════════ -->
+<section id="concept">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-label">Le concept</div>
+      <h2>Service continu, <em>sans compromis.</em></h2>
+    </div>
+    <div class="why-list">
+      <div class="why-item">
+        <div class="why-num">01</div>
+        <div><h3>Cuit à la minute</h3><p>Moules et calamars préparés à chaque commande. Jamais réchauffés, jamais en attente.</p></div>
+      </div>
+      <div class="why-item">
+        <div class="why-num">02</div>
+        <div><h3>Frites 100% maison</h3><p>Pommes de terre coupées sur place chaque matin, cuisson à la demande, jamais de précuisson.</p></div>
+      </div>
+      <div class="why-item">
+        <div class="why-num">03</div>
+        <div><h3>À volonté, vraiment</h3><p>Resservez-vous autant de fois que vous voulez. Les sauces aussi sont illimitées.</p></div>
+      </div>
+      <div class="why-item">
+        <div class="why-num">04</div>
+        <div><h3>De 8h à 23h</h3><p>Petit-déjeuner, déjeuner, dîner — service continu toute la journée, 7j/7 en saison.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ HORAIRES ═══════════════ -->
+<section id="infos">
+  <div class="wrap practical">
+    <div>
+      <div class="section-label">Quand venir</div>
+      <h2 style="margin-bottom:4px">Horaires <em>& saison.</em></h2>
+      <div class="slots-grid" id="horaires-val">
+        <div class="slot-card">
+          <div class="slot-time">Mai – Septembre</div>
+          <div class="slot-name">7 jours / 7</div>
+          <div class="slot-desc">8h – 23h, service continu, petit-déjeuner inclus.</div>
+        </div>
+        <div class="slot-card">
+          <div class="slot-time">Mars, Avril & Octobre</div>
+          <div class="slot-name">Week-ends uniquement</div>
+          <div class="slot-desc">Vendredi soir, samedi et dimanche.</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="section-label">Services</div>
+      <h2 style="margin-bottom:4px">Ce qu'on <em>propose.</em></h2>
+      <ul class="services">
+        <li>257 places (115 salle + 142 terrasse)</li>
+        <li>Accès PMR</li>
+        <li>Terrasse vue mer</li>
+        <li>Vente à emporter</li>
+        <li>Petit-déjeuner dès 8h</li>
+        <li>Glacier & bar véranda</li>
+        <li>Granitas · Crêpes · Gaufres</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ ACCÈS ═══════════════ -->
+<section id="acces">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-label">Où nous trouver</div>
+      <h2>1 Boulevard de la Douane, <em>Saint-Pierre-la-Mer</em></h2>
+    </div>
+    <div class="map-frame">
+      <iframe
+        src="https://www.google.com/maps?q=1+Boulevard+de+la+Douane,+11560+Saint-Pierre-la-Mer&output=embed"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        title="Localisation Moule & Smile Saint-Pierre-la-Mer">
+      </iframe>
+    </div>
+    <div class="map-details">
+      <div class="address-block">
+        <b>Moule & Smile</b>
+        <span>1 Boulevard de la Douane · 11560 Saint-Pierre-la-Mer</span>
+      </div>
+      <a class="btn btn-primary"
+         href="https://www.google.com/maps/dir/?api=1&destination=1+Boulevard+de+la+Douane+11560+Saint-Pierre-la-Mer"
+         target="_blank" rel="noopener">Lancer l'itinéraire</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer>
+  <div class="wrap">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="logo-moule-smile-circle.png" alt="Moule & Smile" id="footer-logo"
+             onerror="this.style.display='none'">
+        <span class="footer-brand-name">Moule & Smile</span>
+      </div>
+      <div class="footer-links">
+        <a href="#formule">La carte</a>
+        <a href="#sauces">Sauces</a>
+        <a href="#infos">Horaires</a>
+        <a href="#acces">Accès</a>
+      </div>
+    </div>
+    <hr class="footer-sep">
+    <div class="footer-inner">
+      <div class="footer-copy">© 2026 Moule & Smile · Saint-Pierre-la-Mer · Fleury-d'Aude</div>
+      <div class="build-tag">v.02/10/2026 00:30</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════ FIREBASE ═══════════════ -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
-// =====================================================
-// CONFIG & STATE
-// =====================================================
-var FB_CFG={apiKey:"AIzaSyCp2uhejjBiIvYzk7RWmc6GF4Vdi4X0A9Q",authDomain:"smokeandsmile.firebaseapp.com",projectId:"smokeandsmile",storageBucket:"smokeandsmile.firebasestorage.app",messagingSenderId:"344160852761",appId:"1:344160852761:web:51f9f43a13d07228dac388"};
-var PWD_HASH='826e1eeaf19001bc84180dfca2ccce2e2c94e55923cde35d92d84eb0ac583f20';
-var AUTH_KEY='ss_auth';
-var SHOP_KEY='ss_shop';
-var SHOPS={ss:{name:'SMOKE & SMILE',sub:'GESTION - NARBONNE',icon:'💨'},mb:{name:'LA MARMITE BLEUE',sub:'GESTION - ST-PIERRE-LA-MER',icon:'🫕'}};
-var MO=['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre'];
-var MS=['Jan','Fev','Mar','Avr','Mai','Jun','Jul','Aou','Sep','Oct','Nov','Dec'];
-var YC=['var(--blue)','var(--amber)','var(--green)','var(--purple)'];
-var YCR=['rgba(56,189,248,.75)','rgba(245,158,11,.75)','rgba(74,222,128,.75)','rgba(167,139,250,.75)'];
-var CC=['rgba(56,189,248,.8)','rgba(245,158,11,.7)','rgba(74,222,128,.7)','rgba(167,139,250,.7)','rgba(244,63,94,.7)','rgba(45,212,191,.7)','rgba(56,189,248,.4)','rgba(245,158,11,.4)'];
-var GRID='rgba(56,189,248,.05)';
-var TICK={color:'#64748b',font:{size:10}};
-var TICKM={color:'#64748b',font:{family:"'JetBrains Mono',monospace",size:10}};
-var TIP={backgroundColor:'#0f172a',borderColor:'#1e3a5f',borderWidth:1,titleColor:'#94a3b8',bodyColor:'#e2e8f0',bodyFont:{family:"'JetBrains Mono',monospace",size:11},callbacks:{label:function(ctx){return ' '+fmtS(ctx.raw);}}};
-
-var db=null, LD={}, currentShop=localStorage.getItem(SHOP_KEY)||'ss';
-var selAY=null,selMY=null,selMon=null,selDY='all';
-var editDs=null,prodView='day';
-var CH={};
-var paieYear=new Date().getFullYear(),paieMonth=new Date().getMonth()+1,paieData={};
-
-// =====================================================
-// HELPERS
-// =====================================================
-function gid(id){return document.getElementById(id);}
-function fmt(n){return(+n||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
-function fmtS(n){return(+n||0).toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:0})+' €';}
-function pct(a,b){return b?((a/b)*100).toFixed(1)+'%':'—';}
-function dif(a,b){return(b&&b!==0)?(((a-b)/b)*100).toFixed(1):null;}
-function chip(v){if(v===null||v===undefined)return '';return '<span class="chip '+(+v>=0?'up':'dn')+'">'+(+v>=0?'&#9650;':'&#9660;')+Math.abs(v)+'%</span>';}
-function fmtDs(ds){return ds.slice(8)+'/'+ds.slice(5,7)+'/'+ds.slice(2,4);}
-function parseXlDate(v){
-  if(!v)return null;
-  if(typeof v==='number'){var d=XLSX.SSF.parse_date_code(v);if(!d)return null;return d.y+'-'+String(d.m).padStart(2,'0')+'-'+String(d.d).padStart(2,'0');}
-  var s=String(v).trim();
-  var m=s.match(/^(\d{2})\/(\d{2})\/(\d{2,4})/);
-  if(m){var y=m[3].length===2?'20'+m[3]:m[3];return y+'-'+m[2]+'-'+m[1];}
-  if(s.match(/^\d{4}-\d{2}-\d{2}/))return s.slice(0,10);
-  return null;
-}
-var toastT;
-function toast(msg,col){clearTimeout(toastT);var t=gid('toast');t.textContent=msg;t.style.borderColor=col||'var(--blue)';t.classList.add('show');toastT=setTimeout(function(){t.classList.remove('show');},3000);}
-function setprog(p){gid('pb').style.width=p+'%';if(p>=100)setTimeout(function(){setprog(0);},600);}
-function sync(state,txt){var d=gid('sdot'),s=gid('stxt'),e=gid('empty-sync');if(d)d.className='sync-dot'+(state==='ok'?' ok':state==='sy'?' sy':'');if(s)s.textContent=txt||'';if(e)e.textContent=txt||'';}
-function dc(id){if(CH[id]){CH[id].destroy();delete CH[id];}}
-
-// =====================================================
-// FIREBASE
-// =====================================================
-function shopDays(){return currentShop+'_days';}
-function shopImports(){return currentShop+'_imports';}
-function shopPaie(){return currentShop+'_paie';}
-
-async function connectFirebase(){
-  try{
-    if(firebase.apps.length)firebase.app().delete();
-    firebase.initializeApp(FB_CFG);
-    db=firebase.firestore();
-    return true;
-  }catch(e){console.error('FB:',e);return false;}
-}
-
-async function fetchDays(){
-  sync('sy','Chargement...');
-  var snap=await db.collection(shopDays()).get();
-  LD={};snap.forEach(function(doc){LD[doc.id]=doc.data();});
-  sync('ok','Synchronise');
-}
-
-async function saveBatch(upd){
-  var keys=Object.keys(upd),SZ=450;
-  for(var i=0;i<keys.length;i+=SZ){
-    var b=db.batch();
-    keys.slice(i,i+SZ).forEach(function(ds){b.set(db.collection(shopDays()).doc(ds),upd[ds],{merge:true});});
-    await b.commit();
-  }
-}
-
-async function fetchImports(){
-  try{var snap=await db.collection(shopImports()).orderBy('ts','desc').limit(50).get();var a=[];snap.forEach(function(d){a.push(Object.assign({id:d.id},d.data()));});return a;}
-  catch(e){return[];}
-}
-
-async function addImportLog(entry){await db.collection(shopImports()).add(Object.assign({},entry,{ts:firebase.firestore.FieldValue.serverTimestamp()}));}
-async function delImportLog(id){await db.collection(shopImports()).doc(id).delete();}
-
-// =====================================================
-// LOGIN
-// =====================================================
-function sha256(str){
-  return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str))
-    .then(function(buf){return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');});
-}
-
-function pickShop(s){
-  currentShop=s;
-  localStorage.setItem(SHOP_KEY,s);
-  gid('card-ss').className='shop-card'+(s==='ss'?' shop-ss':'');
-  gid('card-mb').className='shop-card'+(s==='mb'?' shop-mb':'');
-}
-
-function doLogout(){localStorage.removeItem(AUTH_KEY);sessionStorage.removeItem(AUTH_KEY);location.reload();}
-function switchShop(){localStorage.removeItem(AUTH_KEY);sessionStorage.removeItem(AUTH_KEY);location.reload();}
-function isAuth(){return localStorage.getItem(AUTH_KEY)==='1'||sessionStorage.getItem(AUTH_KEY)==='1';}
-
-function showApp(){
-  gid('login-screen').style.display='none';
-  gid('app').style.display='flex';
-  gid('app').style.flexDirection='column';
-  gid('app').style.height='100%';
-  var sh=SHOPS[currentShop]||SHOPS.ss;
-  gid('h-icon').textContent=sh.icon;
-  gid('h-name').textContent=sh.name;
-  gid('h-sub').textContent=sh.sub;
-  bootApp();
-}
-
-document.addEventListener('DOMContentLoaded',function(){
-  document.addEventListener('dragover',function(e){e.preventDefault();});
-  document.addEventListener('drop',function(e){e.preventDefault();});
-  pickShop(currentShop);
-  gid('loginbtn').addEventListener('click',function(){
-    var pwd=gid('pwd').value;
-    if(!pwd){gid('pwd').focus();return;}
-    sha256(pwd).then(function(hash){
-      if(hash===PWD_HASH){
-        if(gid('remember').checked)localStorage.setItem(AUTH_KEY,'1');
-        else sessionStorage.setItem(AUTH_KEY,'1');
-        localStorage.setItem(SHOP_KEY,currentShop);
-        showApp();
-      }else{
-        gid('lerr').textContent='Mot de passe incorrect';
-        setTimeout(function(){gid('lerr').textContent='';},2500);
-        gid('pwd').select();
-      }
-    });
-  });
-  gid('pwd').addEventListener('keydown',function(e){if(e.key==='Enter')gid('loginbtn').click();});
-  gid('eye').addEventListener('click',function(){
-    var inp=gid('pwd');
-    inp.type=inp.type==='password'?'text':'password';
-    gid('eye').innerHTML=inp.type==='password'?'&#128065;':'&#128584;';
-  });
-  if(isAuth())showApp();
-  else setTimeout(function(){gid('pwd').focus();},150);
-});
-
-// =====================================================
-// FILE IMPORT
-// =====================================================
-function onFileChange(inp){
-  var file=inp&&inp.files&&inp.files[0];
-  inp.value='';
-  if(!file)return;
-  if(!db){toast('Firebase non connecte. Attente...','var(--amber)');var tries=0;var iv=setInterval(function(){tries++;if(db){clearInterval(iv);doImport(file);}else if(tries>10){clearInterval(iv);toast('Firebase indisponible.','var(--red)');}},600);return;}
-  doImport(file);
-}
-
-async function doImport(file){
-  setprog(10);
-  var reader=new FileReader();
-  reader.onload=async function(e){
-    try{
-      setprog(30);
-      var wb=XLSX.read(e.target.result,{type:'array',cellDates:false});
-      var result=mergeWb(wb,file.name);
-      setprog(65);
-      sync('sy','Sauvegarde cloud...');
-      var toSave={};
-      result.dates.forEach(function(ds){toSave[ds]=LD[ds];});
-      await saveBatch(toSave);
-      await addImportLog({file:file.name,periode:result.per,newDates:result.nD,updDates:result.uD,nbDates:result.dates.length,date:new Date().toISOString()});
-      setprog(100);sync('ok','Synchronise');
-      renderAll();
-      toast(result.per+' : +'+result.nD+' dates, '+result.uD+' mises a jour','var(--green)');
-    }catch(err){setprog(0);sync('ok','Connecte');toast('Erreur: '+err.message,'var(--red)');console.error(err);}
-  };
-  reader.onerror=function(){toast('Erreur lecture','var(--red)');setprog(0);};
-  reader.readAsArrayBuffer(file);
-}
-
-function mergeWb(wb,fileName){
-  var inc={};
-  var shS=null;
-  wb.SheetNames.forEach(function(n){if(n.toLowerCase().indexOf('synth')>=0)shS=wb.Sheets[n];});
-  if(shS){
-    var rows=XLSX.utils.sheet_to_json(shS,{defval:0});
-    rows.forEach(function(r){
-      var ds=parseXlDate(r['Date']);
-      if(!ds||String(r['Date']).toUpperCase()==='TOTAL')return;
-      inc[ds]={ca:+(r['CA']||r['Produits']||0),cb:+(r['CB']||0),esp:+(r['Especes']||r['Esp\u00e8ces']||0),cats:{},prods:{},clients:{},nbTx:0};
-    });
-  }
-  var shV=null;
-  wb.SheetNames.forEach(function(n){if(n.toLowerCase()==='ventes')shV=wb.Sheets[n];});
-  if(shV){
-    var rows2=XLSX.utils.sheet_to_json(shV,{defval:''});
-    var txS={};
-    rows2.forEach(function(r){
-      var ds=parseXlDate(r['Date']);
-      if(!ds||String(r['Date']).toUpperCase()==='TOTAL')return;
-      if(!inc[ds])inc[ds]={ca:0,cb:0,esp:0,cats:{},prods:{},clients:{},nbTx:0};
-      var cat=String(r['Cat\u00e9gorie']||r['Categorie']||'').trim()||'Autre';
-      var lib=String(r['Libell\u00e9']||r['Libelle']||'').trim();
-      var cli=String(r['Client']||'').trim();
-      var ttc=+(r['Montant TTC']||0);
-      var qty=+(r['Quantit\u00e9']||r['Quantite']||0);
-      var vte=+(r['Vente']||0);
-      if(lib){
-        inc[ds].cats[cat]=(inc[ds].cats[cat]||0)+ttc;
-        if(!inc[ds].prods[lib])inc[ds].prods[lib]={ca:0,qte:0};
-        inc[ds].prods[lib].ca+=ttc;inc[ds].prods[lib].qte+=qty;
-      }
-      if(cli&&cli!=='De passage'&&cli!=='Client')inc[ds].clients[cli]=(inc[ds].clients[cli]||0)+ttc;
-      if(vte){if(!txS[ds])txS[ds]={};txS[ds][vte]=1;}
-    });
-    Object.keys(txS).forEach(function(ds){if(inc[ds])inc[ds].nbTx=Object.keys(txS[ds]).length;});
-  }
-  var dates=Object.keys(inc).sort();
-  var nD=0,uD=0;
-  dates.forEach(function(ds){
-    var ex=LD[ds];
-    if(ex)uD++;else nD++;
-    LD[ds]={ca:inc[ds].ca||0,cb:inc[ds].cb||0,esp:inc[ds].esp||0,nbTx:inc[ds].nbTx||0,
-      cats:Object.assign({},ex&&ex.cats||{},inc[ds].cats),
-      prods:Object.assign({},ex&&ex.prods||{},inc[ds].prods),
-      clients:Object.assign({},ex&&ex.clients||{},inc[ds].clients)};
-  });
-  var fd=dates[0],ld=dates[dates.length-1];
-  var per=fd&&ld?fmtDs(fd)+' > '+fmtDs(ld):'—';
-  return{dates:dates,nD:nD,uD:uD,per:per};
-}
-
-// =====================================================
-// AGGREGATION
-// =====================================================
-function byMonth(){
-  var m={};
-  Object.keys(LD).forEach(function(ds){
-    var d=LD[ds],mk=ds.slice(0,7);
-    if(!m[mk])m[mk]={ca:0,cb:0,esp:0,nbTx:0,nbDays:0,cats:{},prods:{},clients:{}};
-    m[mk].ca+=d.ca||0;m[mk].cb+=d.cb||0;m[mk].esp+=d.esp||0;m[mk].nbTx+=d.nbTx||0;m[mk].nbDays++;
-    Object.keys(d.cats||{}).forEach(function(k){m[mk].cats[k]=(m[mk].cats[k]||0)+d.cats[k];});
-    Object.keys(d.prods||{}).forEach(function(k){if(!m[mk].prods[k])m[mk].prods[k]={ca:0,qte:0};m[mk].prods[k].ca+=(d.prods[k].ca||0);m[mk].prods[k].qte+=(d.prods[k].qte||0);});
-    Object.keys(d.clients||{}).forEach(function(k){m[mk].clients[k]=(m[mk].clients[k]||0)+d.clients[k];});
-  });
-  return m;
-}
-
-function byYear(){
-  var M=byMonth(),y={};
-  Object.keys(M).forEach(function(mk){
-    var yr=mk.slice(0,4),m=M[mk];
-    if(!y[yr])y[yr]={ca:0,cb:0,esp:0,nbTx:0,nbDays:0};
-    y[yr].ca+=m.ca;y[yr].cb+=m.cb;y[yr].esp+=m.esp;y[yr].nbTx+=m.nbTx;y[yr].nbDays+=m.nbDays;
-  });
-  return y;
-}
-
-function getYears(){return Object.keys(byYear()).sort();}
-
-// =====================================================
-// ANNUAL
-// =====================================================
-function renderAnnual(){
-  var M=byMonth(),Y=byYear(),years=getYears();
-  if(!years.length)return;
-  if(!selAY||years.indexOf(selAY)<0)selAY=years[years.length-1];
-  var yr=selAY,tot=Y[yr]||{ca:0,cb:0,esp:0,nbTx:0,nbDays:0};
-  var prev=Y[String(+yr-1)];
-  var yi=years.indexOf(yr);
-
-  gid('ay-title').textContent=yr;
-  gid('ay-pills').innerHTML=years.map(function(y,i){
-    var on=y===yr;
-    return '<button class="ypill" style="'+(on?'border-color:'+YC[i]+';color:'+YC[i]+';background:'+YCR[i].replace('.75','.1'):'')+'" onclick="selAYear(\''+y+'\')">'+y+'</button>';
-  }).join('');
-
-  var dCA=dif(tot.ca,prev&&prev.ca),dTx=dif(tot.nbTx,prev&&prev.nbTx);
-  gid('ay-kpis').innerHTML=[
-    {l:'CA Total '+yr,v:fmt(tot.ca),s:prev?'Prec. '+fmtS(prev.ca):tot.nbDays+' jours',c:YC[yi]||'var(--blue)',b:dCA},
-    {l:'CA Moyen / Jour',v:fmtS(tot.nbDays?tot.ca/tot.nbDays:0),s:'jours ouverts',c:'var(--amber)'},
-    {l:'Transactions',v:String(tot.nbTx||0),s:prev?'Prec. '+(prev.nbTx||0):'total annee',c:'var(--green)',b:dTx},
-    {l:'Panier Moyen',v:tot.nbTx?fmtS(tot.ca/tot.nbTx):'—',s:'CA / transaction',c:'var(--purple)'}
-  ].map(function(k){return '<div class="kpi"><div class="kl">'+k.l+'</div><div class="kv" style="color:'+k.c+'">'+k.v+(k.b!=null?chip(k.b):'')+'</div><div class="ks">'+k.s+'</div></div>';}).join('');
-
-  var k12=[];for(var i=0;i<12;i++)k12.push(yr+'-'+String(i+1).padStart(2,'0'));
-  var yM=Object.fromEntries(Object.entries(byMonth()).filter(function(e){return e[0].startsWith(yr);}));
-
-  dc('annual');
-  CH['annual']=new Chart(gid('c-annual').getContext('2d'),{type:'bar',data:{labels:MS,datasets:[
-    {label:'CB',data:k12.map(function(mk){return yM[mk]?yM[mk].cb:0;}),backgroundColor:'rgba(56,189,248,.8)',borderRadius:4,stack:'a'},
-    {label:'Esp.',data:k12.map(function(mk){return yM[mk]?yM[mk].esp:0;}),backgroundColor:'rgba(245,158,11,.7)',borderRadius:4,stack:'a'}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:TICK,stacked:true},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}}),stacked:true}}}});
-
-  dc('pay');
-  CH['pay']=new Chart(gid('c-pay').getContext('2d'),{type:'doughnut',data:{labels:['CB','Especes'],datasets:[{data:[tot.cb,tot.esp],backgroundColor:['rgba(56,189,248,.8)','rgba(245,158,11,.7)'],borderColor:'transparent',borderRadius:4}]},options:{cutout:'65%',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:'#94a3b8',font:{size:11},usePointStyle:true}},tooltip:{callbacks:{label:function(ctx){return ' '+fmt(ctx.raw);}}}}}});
-
-  gid('t-annual').innerHTML='<thead><tr><th class="tl">Mois</th><th>CA</th><th>Jours</th><th>Transact.</th><th>Panier</th><th>% CB</th><th>% Esp.</th></tr></thead><tbody>'
-    +k12.map(function(mk,i){var m=yM[mk];if(!m)return '<tr style="opacity:.25"><td class="tl">'+MO[i]+'</td><td class="mo" colspan="6">—</td></tr>';return '<tr><td class="tl" style="font-weight:600">'+MO[i]+'</td><td class="mo" style="color:var(--blue);font-weight:700">'+fmt(m.ca)+'</td><td class="mo" style="color:var(--muted)">'+m.nbDays+'</td><td class="mo" style="color:var(--green)">'+m.nbTx+'</td><td class="mo" style="color:var(--muted)">'+(m.nbTx?fmtS(m.ca/m.nbTx):'—')+'</td><td class="mo" style="color:var(--blue);font-size:11px">'+pct(m.cb,m.ca)+'</td><td class="mo" style="color:var(--amber);font-size:11px">'+pct(m.esp,m.ca)+'</td></tr>';}).join('')
-    +'</tbody><tfoot><tr style="border-top:1px solid var(--b2)"><td class="tl" style="font-weight:700">TOTAL</td><td class="mo" style="color:var(--green);font-weight:700">'+fmt(tot.ca)+'</td><td class="mo" style="color:var(--muted)">'+tot.nbDays+'</td><td class="mo" style="color:var(--green);font-weight:700">'+tot.nbTx+'</td><td class="mo" style="color:var(--muted)">'+(tot.nbTx?fmtS(tot.ca/tot.nbTx):'—')+'</td><td class="mo" style="color:var(--blue)">'+pct(tot.cb,tot.ca)+'</td><td class="mo" style="color:var(--amber)">'+pct(tot.esp,tot.ca)+'</td></tr></tfoot>';
-}
-function selAYear(y){selAY=y;renderAnnual();}
-
-// =====================================================
-// COMPARISON
-// =====================================================
-var cmpDebounce;
-var cmpChipKeys=[];
-
-function triggerCmp(){clearTimeout(cmpDebounce);cmpDebounce=setTimeout(function(){renderComparison();},300);}
-
-function cmpDates(from,to){
-  if(!from||!to)return[];
-  var r=[],keys=Object.keys(LD).sort();
-  for(var i=0;i<keys.length;i++){if(keys[i]>=from&&keys[i]<=to)r.push(keys[i]);}
-  return r;
-}
-
-function cmpTotal(dates){
-  var r={ca:0,cb:0,esp:0,nbTx:0,n:dates.length,cats:{},prods:{}};
-  for(var i=0;i<dates.length;i++){
-    var d=LD[dates[i]]||{};
-    r.ca+=d.ca||0;r.cb+=d.cb||0;r.esp+=d.esp||0;r.nbTx+=d.nbTx||0;
-    var ck=Object.keys(d.cats||{});
-    for(var j=0;j<ck.length;j++)r.cats[ck[j]]=(r.cats[ck[j]]||0)+d.cats[ck[j]];
-    var pk=Object.keys(d.prods||{});
-    for(var j=0;j<pk.length;j++){if(!r.prods[pk[j]])r.prods[pk[j]]={ca:0,qte:0};r.prods[pk[j]].ca+=(d.prods[pk[j]].ca||0);r.prods[pk[j]].qte+=(d.prods[pk[j]].qte||0);}
-  }
-  return r;
-}
-
-function cmpRange(f,t){if(!f||!t)return '—';if(f===t)return fmtDs(f);return fmtDs(f)+' au '+fmtDs(t);}
-
-function buildCmpChips(){
-  var el=gid('cmp-chips');if(!el)return;
-  var allDates=Object.keys(LD).sort(),seen={};
-  cmpChipKeys=[];
-  for(var i=0;i<allDates.length;i++){var mk=allDates[i].slice(0,7);if(!seen[mk]){seen[mk]=true;cmpChipKeys.push(mk);}}
-  cmpChipKeys.reverse();cmpChipKeys=cmpChipKeys.slice(0,8);
-  var html='';
-  for(var i=0;i<cmpChipKeys.length;i++){
-    var mk=cmpChipKeys[i];
-    var mo=MO[+mk.slice(5,7)-1];
-    var yr=mk.slice(0,4);
-    html+='<button class="cpill" onclick="cmpChip('+i+')" style="font-size:10px">'+mo.slice(0,3)+' '+yr+'</button>';
-  }
-  el.innerHTML=html;
-}
-
-function cmpChip(idx){
-  var mk=cmpChipKeys[idx];if(!mk)return;
-  var allDates=Object.keys(LD).sort();
-  var days2=[];
-  for(var i=0;i<allDates.length;i++){if(allDates[i].slice(0,7)===mk)days2.push(allDates[i]);}
-  if(!days2.length)return;
-  var el2f=gid('p2f'),el2t=gid('p2t');
-  if(el2f)el2f.value=days2[0];
-  if(el2t)el2t.value=days2[days2.length-1];
-  var yr=+mk.slice(0,4),mo=+mk.slice(5,7);
-  var pk1=(yr-1)+'-'+String(mo).padStart(2,'0');
-  var pk2=yr+'-'+String(mo>1?mo-1:12).padStart(2,'0');
-  if(mo===1)pk2=(yr-1)+'-12';
-  var days1=[];
-  for(var i=0;i<allDates.length;i++){if(allDates[i].slice(0,7)===pk1)days1.push(allDates[i]);}
-  if(!days1.length){for(var i=0;i<allDates.length;i++){if(allDates[i].slice(0,7)===pk2)days1.push(allDates[i]);}}
-  var el1f=gid('p1f'),el1t=gid('p1t');
-  if(days1.length&&el1f&&el1t){el1f.value=days1[0];el1t.value=days1[days1.length-1];}
-  renderComparison();
-}
-
-function initCmpDates(){
-  buildCmpChips();
-  var el=gid('p2f');
-  if(!el||el.value){renderComparison();return;}
-  if(cmpChipKeys.length>0)cmpChip(0);
-  else renderComparison();
-}
-
-function renderComparison(){
-  var p1f=(gid('p1f')||{}).value||'';
-  var p1t=(gid('p1t')||{}).value||'';
-  var p2f=(gid('p2f')||{}).value||'';
-  var p2t=(gid('p2t')||{}).value||'';
-  var infoEl=gid('cmp-info'),resEl=gid('cmp-results'),emEl=gid('cmp-empty'),kpisEl=gid('cmp-kpis'),tblEl=gid('t-cmp');
-
-  if(!p1f||!p1t||!p2f||!p2t){
-    if(resEl)resEl.style.display='none';
-    if(emEl)emEl.style.display='block';
-    if(infoEl)infoEl.textContent='';
-    return;
-  }
-
-  var d1=cmpDates(p1f,p1t),d2=cmpDates(p2f,p2t);
-  if(infoEl)infoEl.innerHTML='<span style="color:var(--blue)">P1</span> : '+cmpRange(p1f,p1t)+' <strong style="color:var(--blue)">('+d1.length+'j)</strong> &nbsp;|&nbsp; <span style="color:var(--amber)">P2</span> : '+cmpRange(p2f,p2t)+' <strong style="color:var(--amber)">('+d2.length+'j)</strong>';
-
-  if(!d1.length&&!d2.length){
-    if(resEl)resEl.style.display='none';
-    if(emEl){emEl.style.display='block';emEl.textContent='Aucune donnee sur ces periodes.';}
-    return;
-  }
-  if(resEl)resEl.style.display='block';
-  if(emEl)emEl.style.display='none';
-
-  var t1=cmpTotal(d1),t2=cmpTotal(d2);
-  var evCA=dif(t2.ca,t1.ca),evTx=dif(t2.nbTx,t1.nbTx);
-  var m1=t1.n?t1.ca/t1.n:0,m2=t2.n?t2.ca/t2.n:0;
-  var p1=t1.nbTx?t1.ca/t1.nbTx:0,p2=t2.nbTx?t2.ca/t2.nbTx:0;
-  var evPan=dif(p2,p1);
-
-  if(kpisEl){
-    kpisEl.innerHTML=[
-      {l:'CA Periode 1 ('+d1.length+'j)',v:fmt(t1.ca),s:t1.nbTx+' tx  moy '+fmtS(m1)+'/j',c:'var(--blue)'},
-      {l:'CA Periode 2 ('+d2.length+'j)',v:fmt(t2.ca),s:t2.nbTx+' tx  moy '+fmtS(m2)+'/j',c:'var(--amber)',b:evCA},
-      {l:'Evolution CA',v:evCA!=null?(+evCA>=0?'+':'')+evCA+'%':'—',s:'P1 vers P2',c:(evCA!=null&&+evCA>=0)?'var(--green)':'var(--red)'},
-      {l:'Panier moyen',v:fmtS(p1)+' / '+fmtS(p2),s:evPan!=null?(+evPan>=0?'+':'')+evPan+'%':'—',c:'var(--purple)'}
-    ].map(function(k){return '<div class="kpi"><div class="kl">'+k.l+'</div><div class="kv" style="color:'+k.c+';font-size:'+(k.v.length>12?'13px':'17px')+'">'+k.v+(k.b!=null?chip(k.b):'')+'</div><div class="ks">'+k.s+'</div></div>';}).join('');
-  }
-
-  var maxL=Math.max(d1.length,d2.length);
-  var lbs=[],v1a=[],v2a=[];
-  for(var i=0;i<maxL;i++){lbs.push('J'+(i+1));v1a.push(d1[i]?((LD[d1[i]]&&LD[d1[i]].ca)||0):null);v2a.push(d2[i]?((LD[d2[i]]&&LD[d2[i]].ca)||0):null);}
-  dc('cmp');
-  var canC=gid('c-cmp');
-  if(canC){CH['cmp']=new Chart(canC.getContext('2d'),{type:'bar',data:{labels:lbs,datasets:[{label:'P1 '+cmpRange(p1f,p1t),data:v1a,backgroundColor:'rgba(56,189,248,.65)',borderRadius:3},{label:'P2 '+cmpRange(p2f,p2t),data:v2a,backgroundColor:'rgba(245,158,11,.65)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}})}}}});}
-
-  var allCats={};
-  Object.keys(t1.cats).forEach(function(k){allCats[k]=(allCats[k]||0)+t1.cats[k];});
-  Object.keys(t2.cats).forEach(function(k){allCats[k]=(allCats[k]||0)+t2.cats[k];});
-  var topC=Object.keys(allCats).sort(function(a,b){return allCats[b]-allCats[a];}).slice(0,6);
-  dc('cmpcat');
-  var canCat=gid('c-cmpcat');
-  if(canCat&&topC.length){CH['cmpcat']=new Chart(canCat.getContext('2d'),{type:'bar',data:{labels:topC.map(function(k){return k.length>14?k.slice(0,13)+'...':k;}),datasets:[{label:'P1',data:topC.map(function(k){return t1.cats[k]||0;}),backgroundColor:'rgba(56,189,248,.7)',borderRadius:3},{label:'P2',data:topC.map(function(k){return t2.cats[k]||0;}),backgroundColor:'rgba(245,158,11,.7)',borderRadius:3}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}})},y:{grid:{display:false},ticks:TICK}}}});}
-
-  if(!tblEl)return;
-  var uw=maxL>14,th='',rows='';
-  if(!uw){
-    th='<tr><th class="tl">Jour</th><th>Date P1</th><th>CA P1</th><th>Tx P1</th><th>Date P2</th><th>CA P2</th><th>Tx P2</th><th>Evol.</th></tr>';
-    for(var i=0;i<maxL;i++){var ds1=d1[i]||'',ds2=d2[i]||'',dd1=ds1?(LD[ds1]||{}):{},dd2=ds2?(LD[ds2]||{}):{};var ev=(ds1&&ds2)?dif(dd2.ca||0,dd1.ca||0):null,col=ev===null?'var(--muted)':(+ev>=0?'var(--green)':'var(--red)');rows+='<tr><td class="tl mo" style="color:var(--muted)">J'+(i+1)+'</td><td class="mo" style="color:var(--blue);font-size:11px">'+(ds1?fmtDs(ds1):'—')+'</td><td class="mo" style="color:var(--blue)">'+(ds1?fmtS(dd1.ca||0):'—')+'</td><td class="mo" style="color:var(--green)">'+(ds1?dd1.nbTx||0:'—')+'</td><td class="mo" style="color:var(--amber);font-size:11px">'+(ds2?fmtDs(ds2):'—')+'</td><td class="mo" style="color:var(--amber)">'+(ds2?fmtS(dd2.ca||0):'—')+'</td><td class="mo" style="color:var(--green)">'+(ds2?dd2.nbTx||0:'—')+'</td><td class="mo" style="color:'+col+';font-weight:700">'+(ev!=null?(+ev>=0?'+':'')+ev+'%':'—')+'</td></tr>';}
-  }else{
-    th='<tr><th class="tl">Semaine</th><th>CA P1</th><th>Jours</th><th>Tx P1</th><th>CA P2</th><th>Jours</th><th>Tx P2</th><th>Evol.</th></tr>';
-    var nw=Math.ceil(maxL/7);
-    for(var w=0;w<nw;w++){var w1d=d1.slice(w*7,(w+1)*7),w2d=d2.slice(w*7,(w+1)*7),wt1=cmpTotal(w1d),wt2=cmpTotal(w2d),ew=(wt1.ca&&wt2.ca)?dif(wt2.ca,wt1.ca):null,cw=ew===null?'var(--muted)':(+ew>=0?'var(--green)':'var(--red)');rows+='<tr><td class="tl" style="font-weight:600">S'+(w+1)+'</td><td class="mo" style="color:var(--blue)">'+(wt1.n?fmtS(wt1.ca):'—')+'</td><td class="mo" style="color:var(--muted)">'+wt1.n+'j</td><td class="mo" style="color:var(--green)">'+wt1.nbTx+'</td><td class="mo" style="color:var(--amber)">'+(wt2.n?fmtS(wt2.ca):'—')+'</td><td class="mo" style="color:var(--muted)">'+wt2.n+'j</td><td class="mo" style="color:var(--green)">'+wt2.nbTx+'</td><td class="mo" style="color:'+cw+';font-weight:700">'+(ew!=null?(+ew>=0?'+':'')+ew+'%':'—')+'</td></tr>';}
-  }
-  var et=dif(t2.ca,t1.ca),ct=et===null?'var(--muted)':(+et>=0?'var(--green)':'var(--red)');
-  rows+='<tr style="border-top:1px solid var(--b2)"><td class="tl" style="font-weight:700">TOTAL</td><td class="mo" style="color:var(--blue);font-weight:700">'+fmt(t1.ca)+'</td><td class="mo" style="color:var(--muted)">'+t1.n+'j</td><td class="mo" style="color:var(--green);font-weight:700">'+t1.nbTx+'</td><td class="mo" style="color:var(--amber);font-weight:700">'+fmt(t2.ca)+'</td><td class="mo" style="color:var(--muted)">'+t2.n+'j</td><td class="mo" style="color:var(--green);font-weight:700">'+t2.nbTx+'</td><td class="mo" style="color:'+ct+';font-weight:700">'+(et!=null?(+et>=0?'+':'')+et+'%':'—')+'</td></tr>';
-  tblEl.innerHTML='<thead>'+th+'</thead><tbody>'+rows+'</tbody>';
-}
-
-// =====================================================
-// MONTHLY
-// =====================================================
-function renderMonthly(){
-  var M=byMonth(),years=getYears();
-  if(!years.length)return;
-  if(!selMY||years.indexOf(selMY)<0)selMY=years[years.length-1];
-  gid('my-pills').innerHTML=years.map(function(y,i){var on=y===selMY;return '<button class="ypill" style="'+(on?'border-color:'+YC[i]+';color:'+YC[i]:'')+'" onclick="selMYear(\''+y+'\')">'+y+'</button>';}).join('');
-  var yr=selMY;
-  gid('mgrid').innerHTML='';
-  var html='';
-  for(var i=0;i<12;i++){
-    var mk=yr+'-'+String(i+1).padStart(2,'0'),m=M[mk],isSel=mk===selMon;
-    if(!m)html+='<div class="mcell empty"><div class="mn">'+MS[i]+'</div><div class="mv">—</div></div>';
-    else html+='<div class="mcell has'+(isSel?' sel':'')+'" onclick="selMonth(\''+mk+'\')"><div class="mn">'+MS[i]+'</div><div class="mv">'+fmtS(m.ca)+'</div><div class="mj">'+m.nbDays+'j / '+m.nbTx+'tx</div></div>';
-  }
-  gid('mgrid').innerHTML=html;
-  if(selMon&&M[selMon]&&selMon.startsWith(yr))renderMonthDetail(selMon,M);
-  else gid('mdetail').style.display='none';
-}
-function selMYear(y){selMY=y;selMon=null;renderMonthly();}
-function selMonth(mk){selMon=mk;renderMonthly();}
-
-function renderMonthDetail(mk,M){
-  var m=M[mk];
-  gid('mdetail').style.display='block';
-  var yr=mk.slice(0,4),mo=mk.slice(5,7);
-  var lbl=MO[+mo-1]+' '+yr;
-  gid('my-title').textContent=lbl;gid('my-title2').textContent=lbl;
-  gid('my-kpis').innerHTML=[
-    {l:'CA du mois',v:fmt(m.ca),s:m.nbDays+' jours',c:'var(--blue)'},
-    {l:'CA Moyen/Jour',v:fmtS(m.nbDays?m.ca/m.nbDays:0),s:'',c:'var(--amber)'},
-    {l:'Transactions',v:String(m.nbTx||0),s:m.nbTx?'Panier : '+fmtS(m.ca/m.nbTx):'—',c:'var(--green)'},
-    {l:'CB / Especes',v:pct(m.cb,m.ca),s:fmt(m.esp)+' esp.',c:'var(--blue)'}
-  ].map(function(k){return '<div class="kpi"><div class="kl">'+k.l+'</div><div class="kv" style="color:'+k.c+'">'+k.v+'</div><div class="ks">'+k.s+'</div></div>';}).join('');
-
-  var dk=Object.keys(LD).filter(function(ds){return ds.startsWith(mk);}).sort();
-  var bestDs=dk.reduce(function(a,b){return(LD[a]&&LD[b]&&LD[a].ca>LD[b].ca)?a:b;},dk[0]||'');
-
-  var dailyRows='';
-  for(var i=0;i<dk.length;i++){
-    var ds=dk[i],d=LD[ds],best=ds===bestDs;
-    dailyRows+='<tr style="background:'+(best?'rgba(56,189,248,.05)':'transparent')+'">'
-      +'<td class="tl"><button onclick="openModal(\''+ds+'\')" style="background:none;border:1px solid var(--b);border-radius:5px;color:var(--muted);font-size:9px;padding:2px 6px;cursor:pointer">Edit</button></td>'
-      +'<td class="tl" style="font-weight:'+(best?700:400)+';color:'+(best?'var(--blue)':'var(--text)')+'">'+ds.slice(8)+'/'+ds.slice(5,7)+(best?' Best':'')+'</td>'
-      +'<td class="mo" style="color:'+(best?'var(--blue)':'var(--text)')+';font-weight:'+(best?700:400)+'">'+fmt(d.ca||0)+'</td>'
-      +'<td class="mo" style="color:var(--green)">'+(d.nbTx||'—')+'</td>'
-      +'<td class="mo" style="color:var(--muted);font-size:11px">'+(d.nbTx&&d.ca?fmtS(d.ca/d.nbTx):'—')+'</td>'
-      +'<td class="mo" style="color:var(--blue)">'+fmt(d.cb||0)+'</td>'
-      +'<td class="mo" style="color:var(--amber)">'+fmt(d.esp||0)+'</td>'
-      +'<td class="mo" style="color:var(--blue);font-size:11px">'+pct(d.cb,d.ca)+'</td>'
-      +'</tr>';
-  }
-  gid('t-daily').innerHTML='<thead><tr><th class="tl"></th><th class="tl">Date</th><th>CA</th><th>Tx</th><th>Panier</th><th>CB</th><th>Esp.</th><th>% CB</th></tr></thead><tbody>'+dailyRows+'</tbody><tfoot><tr style="border-top:1px solid var(--b2)"><td></td><td class="tl" style="font-weight:700">TOTAL</td><td class="mo" style="color:var(--green);font-weight:700">'+fmt(m.ca)+'</td><td class="mo" style="color:var(--green)">'+(m.nbTx||'—')+'</td><td class="mo" style="color:var(--muted)">'+(m.nbTx?fmtS(m.ca/m.nbTx):'—')+'</td><td class="mo" style="color:var(--blue);font-weight:700">'+fmt(m.cb)+'</td><td class="mo" style="color:var(--amber);font-weight:700">'+fmt(m.esp)+'</td><td class="mo" style="color:var(--blue)">'+pct(m.cb,m.ca)+'</td></tr></tfoot>';
-
-  dc('monthly');
-  CH['monthly']=new Chart(gid('c-monthly').getContext('2d'),{type:'bar',data:{labels:dk.map(function(ds){return ds.slice(8);}),datasets:[{label:'CA',data:dk.map(function(ds){return LD[ds]?LD[ds].ca:0;}),backgroundColor:dk.map(function(ds){return ds===bestDs?'rgba(56,189,248,.95)':'rgba(56,189,248,.5)';}),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}})}}}});
-
-  var cats=Object.entries(m.cats).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
-  dc('cats');
-  CH['cats']=new Chart(gid('c-cats').getContext('2d'),{type:'bar',data:{labels:cats.map(function(c){return c[0].length>15?c[0].slice(0,14)+'...':c[0];}),datasets:[{data:cats.map(function(c){return c[1];}),backgroundColor:CC,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}})},y:{grid:{display:false},ticks:TICK}}}});
-
-  // ── WEEKLY FORECAST IN MONTHLY
-  (function(){
-    var avgDow2=avgByDayOfWeek();
-    var allMonthDays=daysInMonth(mk);
-    var wks=[],tmp=[];
-    allMonthDays.forEach(function(ds){tmp.push(ds);if(tmp.length===7||ds===allMonthDays[allMonthDays.length-1]){wks.push(tmp);tmp=[];}});
-    var wkLbls=[],wkReal=[],wkPrev=[];
-    wks.forEach(function(wdays,wi){
-      var wr=wdays.filter(function(ds){return LD[ds]&&LD[ds].ca>0;}).reduce(function(s,ds){return s+LD[ds].ca;},0);
-      var wp=wdays.filter(function(ds){return (!LD[ds]||!LD[ds].ca)&&dayOfWeek(ds)!==0;}).reduce(function(s,ds){return s+(avgDow2[dayOfWeek(ds)]||0);},0);
-      wkLbls.push('S'+(wi+1));wkReal.push(wr||null);wkPrev.push(wp||null);
-    });
-    dc('weekly-prev');
-    var cel=gid('c-weekly-prev');
-    if(cel){CH['weekly-prev']=new Chart(cel.getContext('2d'),{type:'bar',data:{labels:wkLbls,datasets:[{label:'Reel',data:wkReal,backgroundColor:'rgba(56,189,248,.8)',borderRadius:4},{label:'Prevision',data:wkPrev,backgroundColor:'rgba(245,158,11,.4)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}})}}}});}
-    var wTblRows=wks.map(function(wdays,wi){
-      var wr=wdays.filter(function(ds){return LD[ds]&&LD[ds].ca>0;}).reduce(function(s,ds){return s+LD[ds].ca;},0);
-      var openFut=wdays.filter(function(ds){return (!LD[ds]||!LD[ds].ca)&&dayOfWeek(ds)!==0;});
-      var wp=openFut.reduce(function(s,ds){return s+(avgDow2[dayOfWeek(ds)]||0);},0);
-      var nbR=wdays.filter(function(ds){return LD[ds]&&LD[ds].ca>0;}).length;
-      var nbP=openFut.length;
-      return '<tr><td class="tl" style="font-weight:600">S'+(wi+1)+'</td><td class="mo" style="color:var(--blue)">'+(wr>0?fmt(wr):'—')+'</td><td class="mo" style="color:var(--muted)">'+nbR+'j</td><td class="mo" style="color:var(--amber);font-size:11px">'+(wp>0?fmt(wp):'—')+'</td><td class="mo" style="color:var(--muted)">'+nbP+'j</td><td class="mo" style="color:var(--text);font-weight:700">'+fmt(wr+wp)+'</td></tr>';
-    }).join('');
-    var totalR=wkReal.reduce(function(s,v){return s+(v||0);},0);
-    var totalP=wkPrev.reduce(function(s,v){return s+(v||0);},0);
-    gid('t-weekly-prev').innerHTML='<thead><tr><th class="tl">Sem.</th><th>CA reel</th><th>Jours</th><th>CA prevision</th><th>Jours</th><th>Total</th></tr></thead><tbody>'+wTblRows+'</tbody><tfoot><tr style="border-top:1px solid var(--b2)"><td class="tl" style="font-weight:700">Total</td><td class="mo" style="color:var(--blue);font-weight:700">'+fmt(totalR)+'</td><td></td><td class="mo" style="color:var(--amber);font-weight:700">'+fmt(totalP)+'</td><td></td><td class="mo" style="color:var(--green);font-weight:700">'+fmt(totalR+totalP)+'</td></tr></tfoot>';
-    gid('card-weekly-prev').style.display='block';
-  })();
-
-  var allP={};
-  dk.forEach(function(ds){Object.keys(LD[ds].prods||{}).forEach(function(p){if(!allP[p])allP[p]=0;allP[p]+=(LD[ds].prods[p].ca||0);});});
-  var prodList=Object.keys(allP).map(function(p){return{name:p,total:allP[p]};}).sort(function(a,b){return b.total-a.total;}).slice(0,20);
-
-  if(prodList.length){
-    var shortDays=dk.map(function(ds){return ds.slice(8)+'/'+ds.slice(5,7);});
-    var dayHead=shortDays.map(function(d){return '<th style="min-width:68px">'+d+'</th>';}).join('');
-    var dayRows=prodList.map(function(p){
-      return '<tr><td class="tl" style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.name+'</td>'
-        +dk.map(function(ds){var pd=LD[ds]&&LD[ds].prods?LD[ds].prods[p.name]:null;return pd?'<td class="mo" style="color:var(--blue);font-size:11px">'+fmtS(pd.ca)+'<br><span style="color:var(--muted);font-size:9px">'+pd.qte+'u</span></td>':'<td class="mo" style="color:var(--dim)">—</td>';}).join('')
-        +'<td class="mo" style="color:var(--amber);font-weight:700;font-size:11px">'+fmtS(p.total)+'</td></tr>';
-    }).join('');
-    gid('t-prods-day').innerHTML='<thead><tr><th class="tl" style="min-width:140px">Produit</th>'+dayHead+'<th>Total</th></tr></thead><tbody>'+dayRows+'</tbody>';
-
-    var totRows=prodList.map(function(p,i){
-      var qte=dk.reduce(function(s,ds){return s+((LD[ds]&&LD[ds].prods&&LD[ds].prods[p.name])?LD[ds].prods[p.name].qte||0:0);},0);
-      var jours=dk.filter(function(ds){return LD[ds]&&LD[ds].prods&&LD[ds].prods[p.name]&&LD[ds].prods[p.name].ca>0;}).length;
-      return '<tr><td class="tl mo" style="color:'+(i<3?'var(--amber)':'var(--muted)')+'">'+( i+1)+'</td><td class="tl" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.name+'</td><td class="mo" style="color:var(--blue);font-weight:700">'+fmt(p.total)+'</td><td class="mo" style="color:var(--muted)">'+qte+'</td><td class="mo" style="color:var(--muted)">'+jours+'j</td></tr>';
-    }).join('');
-    gid('t-prods-tot').innerHTML='<thead><tr><th class="tl">#</th><th class="tl">Produit</th><th>CA mois</th><th>Qte</th><th>Jours</th></tr></thead><tbody>'+totRows+'</tbody>';
-    gid('card-prods').style.display='block';setProdView(prodView);
-  }else{gid('card-prods').style.display='none';}
-}
-
-function setProdView(v){
-  prodView=v;
-  gid('pv-day-tbl').style.display=v==='day'?'block':'none';
-  gid('pv-tot-tbl').style.display=v==='tot'?'block':'none';
-  gid('pv-day').className='hbtn'+(v==='day'?' primary':'');
-  gid('pv-tot').className='hbtn'+(v==='tot'?' primary':'');
-}
-
-// =====================================================
-// DETAIL
-// =====================================================
-function renderDetail(){
-  var years=getYears();if(!years.length)return;
-  if(selDY!=='all'&&years.indexOf(selDY)<0)selDY='all';
-  gid('dy-pills').innerHTML='<button class="ypill'+(selDY==='all'?' on':'')+'" style="'+(selDY==='all'?'border-color:var(--blue);color:var(--blue);':'')+'" onclick="selDYear(\'all\')">Toutes</button>'
-    +years.map(function(y,i){var on=y===selDY;return '<button class="ypill" style="'+(on?'border-color:'+YC[i]+';color:'+YC[i]:'')+'" onclick="selDYear(\''+y+'\')">'+y+'</button>';}).join('');
-  var fd=selDY==='all'?LD:Object.keys(LD).filter(function(ds){return ds.startsWith(selDY);}).reduce(function(o,ds){o[ds]=LD[ds];return o;},{});
-  var ap={},ac={};
-  Object.values(fd).forEach(function(d){
-    Object.keys(d.prods||{}).forEach(function(k){if(!ap[k])ap[k]={ca:0,qte:0};ap[k].ca+=(d.prods[k].ca||0);ap[k].qte+=(d.prods[k].qte||0);});
-    Object.keys(d.clients||{}).forEach(function(k){ac[k]=(ac[k]||0)+d.clients[k];});
-  });
-  var prods=Object.keys(ap).map(function(k){return{n:k,v:ap[k]};}).sort(function(a,b){return b.v.ca-a.v.ca;}).slice(0,15);
-  gid('t-prods').innerHTML='<thead><tr><th class="tl">#</th><th class="tl">Produit</th><th>CA</th><th>Qte</th></tr></thead><tbody>'+prods.map(function(p,i){return '<tr><td class="tl mo" style="color:'+(i<3?'var(--amber)':'var(--muted)')+'">'+( i+1)+'</td><td class="tl" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.n+'</td><td class="mo" style="color:var(--blue)">'+fmtS(p.v.ca)+'</td><td class="mo" style="color:var(--muted)">'+p.v.qte+'</td></tr>';}).join('')+'</tbody>';
-  var clients=Object.keys(ac).map(function(k){return{n:k,v:ac[k]};}).sort(function(a,b){return b.v-a.v;}).slice(0,15);
-  gid('t-clients').innerHTML='<thead><tr><th class="tl">#</th><th class="tl">Client</th><th>CA</th></tr></thead><tbody>'+clients.map(function(c,i){return '<tr><td class="tl mo" style="color:'+(i<3?'var(--amber)':'var(--muted)')+'">'+( i+1)+'</td><td class="tl">'+c.n+'</td><td class="mo" style="color:var(--blue)">'+fmt(c.v)+'</td></tr>';}).join('')+'</tbody>';
-}
-function selDYear(y){selDY=y;renderDetail();}
-
-// =====================================================
-// IMPORTS
-// =====================================================
-async function renderImports(){
-  var imps=await fetchImports();
-  gid('ibadge').textContent=imps.length;
-  var cols=['var(--blue)','var(--amber)','var(--green)','var(--purple)','var(--red)'];
-  if(!imps.length){gid('ilist').innerHTML='<p style="color:var(--muted);font-size:12px">Aucun import.</p>';return;}
-  gid('ilist').innerHTML=imps.map(function(imp,i){
-    return '<div class="iitem"><div class="idot" style="background:'+cols[i%5]+'"></div><div style="flex:1;min-width:0"><div class="ititle">'+(imp.periode||'—')+'<span class="ichip" style="background:rgba(74,222,128,.12);color:var(--green)">+'+( imp.newDates||0)+'</span><span class="ichip" style="background:rgba(245,158,11,.12);color:var(--amber)">'+(imp.updDates||0)+' maj</span></div><div class="isub">'+(imp.file||'—')+' &middot; '+(imp.date?new Date(imp.date).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'')+'</div></div><button class="idel" onclick="delImp(\''+imp.id+'\')">&#128465;</button></div>';
-  }).join('');
-}
-function delImp(id){delImportLog(id).then(function(){renderImports();toast('Import supprime');});}
-
-// =====================================================
-// MANUAL ENTRY
-// =====================================================
-function openModal(ds){
-  editDs=ds||null;var isEdit=!!ds&&!!LD[ds];
-  gid('m-title').textContent=isEdit?'Modifier '+fmtDs(ds):'Ajouter un jour';
-  gid('m-sub').textContent=isEdit?'Modification synchronisee':'Saisie manuelle synchronisee';
-  gid('m-delbtn').style.display=isEdit?'block':'none';
-  gid('m-err').style.display='none';
-  if(isEdit){var d=LD[ds];gid('m-date').value=ds;gid('m-ca').value=(d.ca||0).toFixed(2);gid('m-cb').value=(d.cb||0).toFixed(2);gid('m-esp').value=(d.esp||0).toFixed(2);gid('m-tx').value=d.nbTx||0;}
-  else{gid('m-date').value=selMon?selMon+'-01':'';gid('m-ca').value='';gid('m-cb').value='';gid('m-esp').value='';gid('m-tx').value='';}
-  updateRecap();gid('modal').classList.add('open');
-}
-function closeModal(){gid('modal').classList.remove('open');editDs=null;}
-function updateRecap(){
-  var ca=+(gid('m-ca').value||0),cb=+(gid('m-cb').value||0),esp=+(gid('m-esp').value||0),tx=+(gid('m-tx').value||0);
-  var parts=[];
-  if(ca)parts.push('CA : '+ca.toFixed(2)+' eur');
-  if(cb||esp)parts.push('CB : '+cb.toFixed(2)+' | Esp : '+esp.toFixed(2));
-  if(Math.abs(ca-(cb+esp))>0.01)parts.push('Diff : '+(ca-(cb+esp)).toFixed(2));
-  if(tx&&ca)parts.push('Panier : '+(ca/tx).toFixed(2));
-  gid('m-recap').textContent=parts.join('  |  ')||'Remplissez les champs';
-}
-
-async function saveDay(){
-  var ds=gid('m-date').value;
-  if(!ds){gid('m-err').textContent='Selectionne une date.';gid('m-err').style.display='block';return;}
-  var ca=+(gid('m-ca').value||0),cb=+(gid('m-cb').value||0),esp=+(gid('m-esp').value||0),tx=+(gid('m-tx').value||0);
-  if(!ca&&!cb&&!esp){gid('m-err').textContent='Saisis au moins le CA.';gid('m-err').style.display='block';return;}
-  var ex=LD[ds]||{};
-  LD[ds]={ca:ca,cb:cb,esp:esp,nbTx:tx,cats:ex.cats||{},prods:ex.prods||{},clients:ex.clients||{}};
-  sync('sy','Sauvegarde...');
-  try{
-    await db.collection(shopDays()).doc(ds).set(LD[ds],{merge:true});
-    await addImportLog({file:'Saisie manuelle',periode:fmtDs(ds),newDates:editDs?0:1,updDates:editDs?1:0,nbDates:1,date:new Date().toISOString()});
-    sync('ok','Synchronise');closeModal();renderAll();
-    toast('Journee '+fmtDs(ds)+' '+(editDs?'mise a jour':'ajoutee'),'var(--green)');
-  }catch(e){sync('ok','Connecte');gid('m-err').textContent='Erreur : '+e.message;gid('m-err').style.display='block';}
-}
-
-async function deleteDayManual(){
-  if(!editDs||!confirm('Supprimer la journee '+fmtDs(editDs)+' ?'))return;
-  var ds=editDs;delete LD[ds];
-  await db.collection(shopDays()).doc(ds).delete();
-  closeModal();renderAll();toast('Journee supprimee','var(--red)');
-}
-
-gid('modal').addEventListener('click',function(e){if(e.target===gid('modal'))closeModal();});
-
-// =====================================================
-// PAIE
-// =====================================================
-var EMPLOYEES=[
-  {id:'david', name:'David Spanedda',  fields:['vacances','prime','absence','tickets','km','notes']},
-  {id:'melvin',name:'Melvin Ladurelle',fields:['prime','absence','vacances','tickets','notes']},
-  {id:'thomas',name:'Thomas Martin',   fields:['tickets','notes']}
-];
-var FLABELS={vacances:'Vacances (dates)',prime:'Prime',absence:'Absence',tickets:'Ticket restaurant',km:'Indemnite kilometrique',notes:'Notes'};
-
-function paieColKey(){return currentShop+'_paie_'+paieYear+'_'+String(paieMonth).padStart(2,'0');}
-
-function paieMonthMove(dir){
-  paieMonth+=dir;
-  if(paieMonth<1){paieMonth=12;paieYear--;}
-  if(paieMonth>12){paieMonth=1;paieYear++;}
-  loadPaieMonth();
-}
-
-async function loadPaieMonth(){
-  gid('paie-month-lbl').textContent=MO[paieMonth-1]+' '+paieYear;
-  gid('paie-preview').style.display='none';
-  paieData={};
-  if(db){try{var doc=await db.collection(shopPaie()).doc(paieColKey()).get();if(doc.exists)paieData=doc.data()||{};}catch(e){console.error('loadPaie:',e);}}
-  renderPaieForm();
-}
-
-function renderPaieForm(){
-  var html=EMPLOYEES.map(function(emp){
-    var d=paieData[emp.id]||{};
-    var fields=emp.fields.map(function(f){
-      var val=d[f]||'';
-      var cls=(f==='notes'||f==='km')?'paie-field full':'paie-field';
-      if(f==='notes'||f==='vacances')
-        return '<div class="'+cls+'"><label>'+FLABELS[f]+'</label><textarea id="pf-'+emp.id+'-'+f+'" placeholder="RAS">'+val+'</textarea></div>';
-      return '<div class="'+cls+'"><label>'+FLABELS[f]+'</label><input type="text" id="pf-'+emp.id+'-'+f+'" placeholder="RAS" value="'+val.replace(/"/g,'&quot;')+'"/></div>';
-    }).join('');
-    return '<div class="emp-card"><div style="font-size:15px;font-weight:800;color:var(--blue);margin-bottom:14px">'+emp.name+'</div><div class="paie-grid">'+fields+'</div></div>';
-  }).join('');
-  gid('paie-employees').innerHTML=html;
-}
-
-function collectPaieData(){
-  var data={};
-  EMPLOYEES.forEach(function(emp){
-    data[emp.id]={};
-    emp.fields.forEach(function(f){
-      var el=document.getElementById('pf-'+emp.id+'-'+f);
-      if(el)data[emp.id][f]=el.value.trim();
-    });
-  });
-  return data;
-}
-
-async function savePaie(){
-  paieData=collectPaieData();
-  if(!db){toast('Firebase non connecte','var(--red)');return;}
-  try{
-    await db.collection(shopPaie()).doc(paieColKey()).set(paieData);
-    var sv=gid('paie-saved');sv.style.display='inline';
-    setTimeout(function(){sv.style.display='none';},2500);
-    toast('Paie '+MO[paieMonth-1]+' '+paieYear+' sauvegardee','var(--green)');
-  }catch(e){toast('Erreur : '+e.message,'var(--red)');}
-}
-
-function buildPaieText(){
-  paieData=collectPaieData();
-  var shop=SHOPS[currentShop]||{name:'SMOKE AND SMILE'};
-  var lines=['Bonjour Salome,','','Pouvez vous me preparer les fiches de paies suivantes pour '+MO[paieMonth-1]+' '+paieYear+' ?','',shop.name+' :',''];
-  EMPLOYEES.forEach(function(emp){
-    var d=paieData[emp.id]||{};
-    lines.push(emp.name+' :');
-    emp.fields.forEach(function(f){lines.push(FLABELS[f]+' : '+((d[f]||'').trim()||'RAS'));});
-    lines.push('');
-  });
-  lines.push('Cordialement');lines.push('Thomas MARTIN');
-  return lines.join('\n');
-}
-
-function previewPaie(){
-  gid('paie-preview-text').textContent=buildPaieText();
-  var p=gid('paie-preview');p.style.display=p.style.display==='none'?'block':'none';
-}
-
-function exportPaieDoc(){
-  paieData=collectPaieData();
-  var shop=SHOPS[currentShop]||{name:'SMOKE AND SMILE'};
-  var fname='paie_'+currentShop+'_'+paieYear+'_'+String(paieMonth).padStart(2,'0')+'_'+MO[paieMonth-1]+'.doc';
-
-  var w='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
-  w+='<head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:11pt;margin:2cm;}p{margin:5pt 0;line-height:1.5;}.emp{font-weight:bold;margin-top:14pt;margin-bottom:2pt;}.field{margin-left:18pt;}</style></head><body>';
-  w+='<p>Bonjour Salome,</p><p>&nbsp;</p>';
-  w+='<p>Pouvez vous me preparer les fiches de paies suivantes pour <b>'+MO[paieMonth-1]+' '+paieYear+'</b> ?</p><p>&nbsp;</p>';
-  w+='<p><b>'+shop.name+' :</b></p><p>&nbsp;</p>';
-  EMPLOYEES.forEach(function(emp){
-    var d=paieData[emp.id]||{};
-    w+='<p class="emp">'+emp.name+' :</p>';
-    emp.fields.forEach(function(f){w+='<p class="field">'+FLABELS[f]+' : '+((d[f]||'').trim()||'RAS')+'</p>';});
-    w+='<p>&nbsp;</p>';
-  });
-  w+='<p>Cordialement,</p><p><b>Thomas MARTIN</b></p></body></html>';
-
-  // base64 encode pour forcer le telechargement (fonctionne sur tous les appareils)
-  var b64=btoa(unescape(encodeURIComponent(w)));
-  var a=document.createElement('a');
-  a.href='data:application/msword;base64,'+b64;
-  a.download=fname;
-  a.style.display='none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(function(){document.body.removeChild(a);},1000);
-  toast('Fichier '+fname+' telecharge !','var(--green)');
-}
-
-// =====================================================
-// RESET
-// =====================================================
-async function resetAll(){
-  if(!confirm('Effacer TOUTES les donnees ?'))return;
-  var s1=await db.collection(shopDays()).get();var b1=db.batch();s1.forEach(function(d){b1.delete(d.ref);});await b1.commit();
-  var s2=await db.collection(shopImports()).get();var b2=db.batch();s2.forEach(function(d){b2.delete(d.ref);});await b2.commit();
-  LD={};Object.keys(CH).forEach(function(k){CH[k].destroy();delete CH[k];});
-  renderAll();toast('Donnees effacees','var(--red)');
-}
-
-// =====================================================
-// TABS
-// =====================================================
-document.querySelectorAll('.tab').forEach(function(btn){
-  btn.addEventListener('click',function(){
-    document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on');});
-    document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');});
-    btn.classList.add('on');
-    var pg=btn.getAttribute('data-p');
-    var el=document.getElementById('page-'+pg);
-    if(el)el.classList.add('on');
-    if(pg==='annual')  try{renderAnnual();}catch(e){console.error(e);}
-    if(pg==='compare') try{initCmpDates();}catch(e){console.error(e);}
-    if(pg==='monthly') try{renderMonthly();}catch(e){console.error(e);}
-    if(pg==='detail')  try{renderDetail();}catch(e){console.error(e);}
-    if(pg==='prevision') try{renderPrevision();}catch(e){console.error(e);}
-    if(pg==='employes') try{renderEmpList();}catch(e){console.error(e);}
-    if(pg==='paie')    try{loadPaieMonth();}catch(e){console.error(e);}
-    if(pg==='imports') try{renderImports();}catch(e){console.error(e);}
-  });
-});
-
-// =====================================================
-// MASTER RENDER
-// =====================================================
-function renderAll(){
-  var has=Object.keys(LD).length>0;
-  var empty=gid('empty-state'),app=gid('app');
-  if(empty)empty.style.display=has?'none':'flex';
-  if(has){
-    var activeTab=document.querySelector('.tab.on')||document.querySelector('.tab');
-    if(activeTab){
-      var pg=activeTab.getAttribute('data-p');
-      if(pg==='annual')  try{renderAnnual();}catch(e){console.error(e);}
-      if(pg==='compare') try{renderComparison();}catch(e){console.error(e);}
-      if(pg==='monthly') try{renderMonthly();}catch(e){console.error(e);}
-      if(pg==='detail')  try{renderDetail();}catch(e){console.error(e);}
-      if(pg==='prevision') try{renderPrevision();}catch(e){console.error(e);}
-    if(pg==='employes') try{renderEmpList();}catch(e){console.error(e);}
-    if(pg==='paie')    try{loadPaieMonth();}catch(e){console.error(e);}
-      if(pg==='imports') try{renderImports();}catch(e){console.error(e);}
-    }
-  }
-}
-
-
-// =====================================================
-// PREVISION
-// =====================================================
-
-var JOURS_NOMS = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-var JOURS_COURT = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-
-// Calcule le jour de semaine d'une date ds "YYYY-MM-DD"
-function dayOfWeek(ds){
-  var parts = ds.split('-');
-  var d = new Date(+parts[0], +parts[1]-1, +parts[2]);
-  return d.getDay(); // 0=Dim, 1=Lun...6=Sam
-}
-
-// Moyenne CA par jour de semaine sur tout l'historique
-function avgByDayOfWeek(){
-  var sums=[0,0,0,0,0,0,0], counts=[0,0,0,0,0,0,0];
-  Object.keys(LD).forEach(function(ds){
-    var dow=dayOfWeek(ds);
-    if(dow===0) return; // Dimanche : magasin ferme
-    var ca=LD[ds].ca||0;
-    if(ca>0){sums[dow]+=ca;counts[dow]++;}
-  });
-  // dow=0 (dimanche) reste a 0
-  return sums.map(function(s,i){return (i===0)?0:(counts[i]>0?s/counts[i]:0);});
-}
-
-// Jours d'un mois "YYYY-MM"
-function daysInMonth(mk){
-  var yr=+mk.slice(0,4), mo=+mk.slice(5,7);
-  var total=new Date(yr,mo,0).getDate();
-  var days=[];
-  for(var d=1;d<=total;d++) days.push(mk+'-'+String(d).padStart(2,'0'));
-  return days;
-}
-
-// Vrai aujourd'hui YYYY-MM-DD (approx. basé sur dernière date connue)
-function getTodayApprox(){
-  var keys=Object.keys(LD).sort();
-  if(!keys.length) return null;
-  return keys[keys.length-1]; // derniere date avec données = approx aujourd'hui
-}
-
-function renderPrevision(){
-  var allDates=Object.keys(LD).sort();
-  if(!allDates.length){
-    gid('prev-kpis').innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:20px;font-size:12px">Importez des donnees pour voir les previsions.</div>';
-    return;
-  }
-
-  // Mois en cours = dernier mois avec données
-  var todayDs=allDates[allDates.length-1];
-  var currentMk=todayDs.slice(0,7);
-  var yr=+currentMk.slice(0,4), mo=+currentMk.slice(5,7);
-
-  gid('prev-month-lbl').textContent='— '+MO[mo-1]+' '+yr;
-
-  var avgDow=avgByDayOfWeek();
-  var monthDays=daysInMonth(currentMk);
-  var totalDays=monthDays.length;
-
-  // Données réelles du mois
-  var realDays=monthDays.filter(function(ds){return LD[ds]&&(LD[ds].ca||0)>0;});
-  var futureDays=monthDays.filter(function(ds){return !LD[ds]||(LD[ds].ca||0)===0;});
-  var caReal=realDays.reduce(function(s,ds){return s+(LD[ds].ca||0);},0);
-  var nbReal=realDays.length;
-
-  // Prévision pour les jours restants basée sur les moyennes par dow
-  // Jours restants ouverts (hors dimanches)
-  var futureDaysOpen=futureDays.filter(function(ds){return dayOfWeek(ds)!==0;});
-  var caForecast=futureDaysOpen.reduce(function(s,ds){
-    var dow=dayOfWeek(ds);
-    return s+(avgDow[dow]||0);
-  },0);
-  var caTotal=caReal+caForecast;
-
-  // Objectif
-  var target=+(gid('prev-target')||{}).value||0;
-  var pctProgress=target>0?Math.min(100,(caReal/target)*100):0;
-  var pctTotal=target>0?Math.min(200,(caTotal/target)*100):0;
-
-  // Info objectif
-  if(gid('prev-target-info')){
-    if(target>0){
-      var reste=target-caReal;
-      var joursRestants=futureDays.length;
-      var needed=joursRestants>0?reste/joursRestants:0;
-      gid('prev-target-info').innerHTML=
-        'CA realise : <strong style="color:var(--blue)">'+fmt(caReal)+'</strong> / objectif <strong>'+fmt(target)+'</strong><br>'
-        +'Reste a faire : <strong style="color:'+(reste>0?'var(--amber)':'var(--green)')+'">'+fmt(Math.max(0,reste))+'</strong>'
-        +' sur '+joursRestants+' jours'
-        +(joursRestants>0&&reste>0?' — soit <strong style="color:var(--amber)">'+fmtS(needed)+'/j</strong> en moyenne':'');
-    } else {
-      gid('prev-target-info').innerHTML='<span style="color:var(--muted)">Saisissez un objectif mensuel pour voir votre progression.</span>';
-    }
-  }
-
-  // Barre de progression
-  if(gid('prev-progress-bar')) gid('prev-progress-bar').style.width=pctProgress+'%';
-  if(gid('prev-progress-info')){
-    // Nb de jours ouverts dans le mois (hors dimanches)
-    var totalOpenDays=monthDays.filter(function(ds){return dayOfWeek(ds)!==0;}).length;
-    var pace=nbReal>0?caReal/nbReal:0;
-    var projFull=pace*totalOpenDays;
-    gid('prev-progress-info').innerHTML=
-      'Rythme actuel : <strong style="color:var(--blue)">'+fmtS(pace)+'/j</strong>'
-      +' &nbsp;|&nbsp; Projection fin de mois : <strong style="color:'+(target>0&&projFull>=target?'var(--green)':'var(--amber)')+'">'+fmt(projFull)+'</strong>'
-      +(target>0?' &nbsp;|&nbsp; Objectif : '+Math.round(pctProgress)+'% atteint':'');
-  }
-
-  // KPIs
-  var memeperiodean=null;
-  var prevYrMk=(yr-1)+'-'+String(mo).padStart(2,'0');
-  var prevYrDays=Object.keys(LD).filter(function(ds){return ds.startsWith(prevYrMk);});
-  if(prevYrDays.length>0){
-    // Meme nb de jours que l'annee précédente
-    var prevSameNb=prevYrDays.slice(0,nbReal);
-    memeperiodean=prevSameNb.reduce(function(s,ds){return s+(LD[ds].ca||0);},0);
-  }
-  var evAn=dif(caReal,memeperiodean);
-
-  gid('prev-kpis').innerHTML=[
-    {l:'CA realise ('+nbReal+'j)',    v:fmt(caReal),    s:nbReal+' jours avec ventes',                                        c:'var(--blue)'},
-    {l:'Prevision fin de mois',       v:fmt(caTotal),   s:'reel + '+futureDays.length+' jours projetes',                      c:'var(--amber)'},
-    {l:'vs meme periode an-1',        v:memeperiodean!=null?fmt(memeperiodean):'—', s:evAn!=null?(+evAn>=0?'+':'')+evAn+'% vs '+( yr-1):'Pas de donnees '+( yr-1), c:evAn!=null&&+evAn>=0?'var(--green)':'var(--red)', b:evAn},
-    {l:'Jours ouverts restants',       v:String(futureDaysOpen.length),s:'dimanches exclus ('+futureDays.length+' jours tot.)',   c:'var(--muted)'}
-  ].map(function(k){return '<div class="kpi"><div class="kl">'+k.l+'</div><div class="kv" style="color:'+k.c+';font-size:'+(k.v.length>12?'13px':'17px')+'">'+k.v+(k.b!=null?chip(k.b):'')+'</div><div class="ks">'+k.s+'</div></div>';}).join('');
-
-  // Chart semaine en cours
-  // Trouver la semaine contenant todayDs
-  var todayDow=dayOfWeek(todayDs);
-  var weekStart=new Date(+yr,mo-1,+todayDs.slice(8)-todayDow);
-  var weekDays=[];
-  for(var i=0;i<7;i++){
-    var d=new Date(weekStart);d.setDate(d.getDate()+i);
-    var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    weekDays.push(ds);
-  }
-  var wReal=weekDays.map(function(ds){return LD[ds]&&(LD[ds].ca||0)>0?LD[ds].ca:null;});
-  // Dimanche = 0 dans avgDow, donc pas de prevision ce jour-la
-  var wForecast=weekDays.map(function(ds){
-    var dow=dayOfWeek(ds);
-    if(dow===0) return null; // ferme
-    return (LD[ds]&&(LD[ds].ca||0)>0)?null:(avgDow[dow]||0);
-  });
-
-  dc('prev-week');
-  var cwel=gid('c-prev-week');
-  if(cwel){
-    CH['prev-week']=new Chart(cwel.getContext('2d'),{type:'bar',
-      data:{labels:weekDays.map(function(ds){return JOURS_COURT[dayOfWeek(ds)]+' '+ds.slice(8)+'/'+ds.slice(5,7);}),datasets:[
-        {label:'Reel',data:wReal,backgroundColor:'rgba(56,189,248,.8)',borderRadius:4},
-        {label:'Prevision',data:wForecast,backgroundColor:'rgba(245,158,11,.35)',borderRadius:4,borderColor:'rgba(245,158,11,.6)',borderWidth:1}
-      ]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#94a3b8',font:{size:10},usePointStyle:true}},tooltip:TIP},
-        scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}})}}}
-    });
-  }
-
-  // Tableau semaines du mois
-  var weeks=[];
-  var wk=[];
-  monthDays.forEach(function(ds){
-    wk.push(ds);
-    if(wk.length===7||ds===monthDays[monthDays.length-1]){weeks.push(wk);wk=[];}
-  });
-  var wRows='<thead><tr><th class="tl">Semaine</th><th>Dates</th><th>CA reel</th><th>CA prevision</th><th>Total proj.</th><th>% objectif sem.</th></tr></thead><tbody>';
-  var weekTarget=target>0?target/(totalDays/7):0;
-  weeks.forEach(function(wdays,wi){
-    var wRealCA=wdays.filter(function(ds){return LD[ds]&&LD[ds].ca>0;}).reduce(function(s,ds){return s+LD[ds].ca;},0);
-    var wProjCA=wdays.filter(function(ds){return !LD[ds]||!LD[ds].ca;}).reduce(function(s,ds){return s+(avgDow[dayOfWeek(ds)]||0);},0);
-    var wTotal=wRealCA+wProjCA;
-    var wPct=weekTarget>0?Math.round((wTotal/weekTarget)*100):null;
-    var first=wdays[0],last=wdays[wdays.length-1];
-    var pctCol=wPct===null?'var(--muted)':(wPct>=100?'var(--green)':wPct>=80?'var(--amber)':'var(--red)');
-    wRows+='<tr>'
-      +'<td class="tl" style="font-weight:600">S'+(wi+1)+'</td>'
-      +'<td class="mo" style="color:var(--muted);font-size:11px">'+first.slice(8)+'/'+first.slice(5,7)+' - '+last.slice(8)+'/'+last.slice(5,7)+'</td>'
-      +'<td class="mo" style="color:var(--blue)">'+(wRealCA>0?fmt(wRealCA):'—')+'</td>'
-      +'<td class="mo" style="color:var(--amber);font-size:11px">'+(wProjCA>0?fmt(wProjCA):'—')+'</td>'
-      +'<td class="mo" style="color:var(--text);font-weight:700">'+fmt(wTotal)+'</td>'
-      +'<td class="mo" style="color:'+pctCol+';font-weight:700">'+(wPct!==null?wPct+'%':'—')+'</td>'
-      +'</tr>';
-  });
-  wRows+='<tr style="border-top:1px solid var(--b2)"><td class="tl" style="font-weight:700">TOTAL</td><td class="mo" style="color:var(--muted);font-size:11px">'+MO[mo-1]+' '+yr+'</td><td class="mo" style="color:var(--blue);font-weight:700">'+fmt(caReal)+'</td><td class="mo" style="color:var(--amber);font-weight:700">'+fmt(caForecast)+'</td><td class="mo" style="color:var(--green);font-weight:700">'+fmt(caTotal)+'</td><td class="mo" style="color:'+(target>0&&caTotal>=target?'var(--green)':'var(--amber)')+';font-weight:700">'+(target>0?Math.round((caTotal/target)*100)+'%':'—')+'</td></tr>';
-  wRows+='</tbody>';
-  gid('t-prev-weeks').innerHTML=wRows;
-
-  // Chart profil jour de semaine
-  var dowLabels=JOURS_NOMS.map(function(j,i){return JOURS_COURT[i];});
-  // Reorder: Mon-Sun for display
-  var order=[1,2,3,4,5,6,0]; // Lun=1 ... Sam=6, Dim=0
-  var dowData=order.map(function(d){return Math.round(avgDow[d]);});
-  var dowLbls=order.map(function(d){return JOURS_COURT[d];});
-  var dowCols=order.map(function(d){
-    if(d===0) return 'rgba(100,116,139,.3)'; // dimanche ferme
-    if(d===6) return 'rgba(167,139,250,.7)'; // samedi
-    return 'rgba(56,189,248,.7)'; // semaine
-  });
-  var maxDow=Math.max.apply(null,dowData.filter(function(v){return v>0;})||[1]);
-
-  dc('prev-days');
-  var cdel=gid('c-prev-days');
-  if(cdel&&maxDow>0){
-    CH['prev-days']=new Chart(cdel.getContext('2d'),{type:'bar',
-      data:{labels:dowLbls,datasets:[{
-        label:'CA moyen historique',
-        data:dowData,
-        backgroundColor:dowCols,
-        borderRadius:4
-      }]},
-      options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:function(ctx){return ' Moy. '+fmtS(ctx.raw)+'/j';}}}},
-        scales:{x:{grid:{color:GRID},ticks:TICK},y:{grid:{color:GRID},ticks:Object.assign({},TICKM,{callback:function(v){return v+'€';}})}}}
-    });
-    // Trouver le meilleur et pire jour
-    var bestDow=order[dowData.indexOf(Math.max.apply(null,dowData.filter(function(v){return v>0;})))];
-    var worstIdx=dowData.filter(function(v){return v>0;});
-    var worst=Math.min.apply(null,worstIdx);
-    var worstDow=order[dowData.indexOf(worst)];
-    // Sunday is always 0 - find best/worst among open days
-    var openDows=order.filter(function(d){return d!==0;});
-    var openData=openDows.map(function(d){return avgDow[d]||0;});
-    var maxV=Math.max.apply(null,openData), minV=Math.min.apply(null,openData.filter(function(v){return v>0;})||[0]);
-    var bestDowOpen=openDows[openData.indexOf(maxV)];
-    var worstDowOpen=openDows[openData.indexOf(minV)];
-    gid('prev-days-info').textContent='Meilleur jour : '+JOURS_NOMS[bestDowOpen]+' (moy. '+fmtS(avgDow[bestDowOpen])+')  |  Plus faible ouvert : '+JOURS_NOMS[worstDowOpen]+' (moy. '+fmtS(avgDow[worstDowOpen])+')  |  Dimanche : ferme';
-  }
-}
-
-
-// =====================================================
-// EMPLOYES
-// =====================================================
-var ALL_FIELDS = ['vacances','prime','absence','tickets','km','notes'];
-var FIELD_LABELS_ALL = {vacances:'Vacances (dates)',prime:'Prime',absence:'Absence',tickets:'Ticket restaurant',km:'Indemnite kilometrique',notes:'Notes / autres'};
-
-// Load employees from Firebase or fallback to defaults
-var empEditId = null;
-
-async function loadEmployees(){
-  if(!db) return;
-  try{
-    var doc = await db.collection(currentShop+'_config').doc('employees').get();
-    if(doc.exists && doc.data().list && doc.data().list.length){
-      EMPLOYEES = doc.data().list;
-    }
-    // Sync FLABELS
-    FLABELS = FIELD_LABELS_ALL;
-  }catch(e){ console.error('loadEmployees:',e); }
-}
-
-async function saveEmployees(){
-  if(!db) return;
-  try{
-    await db.collection(currentShop+'_config').doc('employees').set({list: EMPLOYEES});
-  }catch(e){ console.error('saveEmployees:',e); }
-}
-
-function renderEmpList(){
-  var el = gid('emp-list');
-  if(!el) return;
-  if(!EMPLOYEES.length){
-    el.innerHTML='<p style="color:var(--muted);font-size:12px;text-align:center;padding:24px">Aucun employe configure.</p>';
-    return;
-  }
-  el.innerHTML = EMPLOYEES.map(function(emp, i){
-    var fieldNames = (emp.fields||[]).map(function(f){ return FIELD_LABELS_ALL[f]||f; });
-    return '<div class="emp-card" style="display:flex;align-items:flex-start;gap:14px;margin-bottom:10px">'
-      +'<div style="width:38px;height:38px;background:linear-gradient(135deg,var(--blue),#0ea5e9);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#128100;</div>'
-      +'<div style="flex:1;min-width:0">'
-      +'<div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px">'+emp.name+'</div>'
-      +'<div style="font-size:10px;color:var(--muted);line-height:1.6">Champs : <span style="color:var(--blue)">'+( fieldNames.join(', ')||'—')+'</span></div>'
-      +'</div>'
-      +'<div style="display:flex;gap:7px;flex-shrink:0">'
-      +'<button class="hbtn" onclick="moveEmp('+i+',-1)" title="Monter" style="padding:4px 9px">&#8593;</button>'
-      +'<button class="hbtn" onclick="moveEmp('+i+',1)" title="Descendre" style="padding:4px 9px">&#8595;</button>'
-      +'<button class="hbtn primary" onclick="openEmpModal('+i+')">Modifier</button>'
-      +'</div>'
-      +'</div>';
-  }).join('');
-}
-
-function moveEmp(idx, dir){
-  var newIdx = idx + dir;
-  if(newIdx < 0 || newIdx >= EMPLOYEES.length) return;
-  var tmp = EMPLOYEES[idx];
-  EMPLOYEES[idx] = EMPLOYEES[newIdx];
-  EMPLOYEES[newIdx] = tmp;
-  saveEmployees();
-  renderEmpList();
-}
-
-function openEmpModal(idx){
-  empEditId = (idx !== null && idx >= 0) ? idx : null;
-  var isEdit = empEditId !== null;
-  gid('em-title').textContent = isEdit ? 'Modifier '+EMPLOYEES[empEditId].name : 'Ajouter un employe';
-  gid('em-err').style.display = 'none';
-  gid('em-delbtn').style.display = isEdit ? 'block' : 'none';
-
-  // Reset all checkboxes
-  ALL_FIELDS.forEach(function(f){ var el=gid('ef-'+f); if(el) el.checked=false; });
-  gid('em-name').value = '';
-
-  if(isEdit){
-    var emp = EMPLOYEES[empEditId];
-    gid('em-name').value = emp.name || '';
-    (emp.fields||[]).forEach(function(f){ var el=gid('ef-'+f); if(el) el.checked=true; });
-  } else {
-    // Default: check all fields
-    ALL_FIELDS.forEach(function(f){ var el=gid('ef-'+f); if(el) el.checked=true; });
-  }
-  gid('modal-emp').classList.add('open');
-}
-
-function closeEmpModal(){
-  gid('modal-emp').classList.remove('open');
-  empEditId = null;
-}
-
-function saveEmp(){
-  var name = (gid('em-name').value||'').trim();
-  if(!name){ gid('em-err').textContent='Saisir un nom.'; gid('em-err').style.display='block'; return; }
-  var fields = ALL_FIELDS.filter(function(f){ var el=gid('ef-'+f); return el&&el.checked; });
-  if(!fields.length){ gid('em-err').textContent='Selectionner au moins un champ.'; gid('em-err').style.display='block'; return; }
-
-  var id = name.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,20)+'_'+Date.now().toString().slice(-4);
-  var entry = {id: empEditId!==null?EMPLOYEES[empEditId].id:id, name:name, fields:fields};
-
-  if(empEditId !== null) EMPLOYEES[empEditId] = entry;
-  else EMPLOYEES.push(entry);
-
-  saveEmployees();
-  closeEmpModal();
-  renderEmpList();
-  toast('Employe '+(empEditId!==null?'mis a jour':'ajoute'),'var(--green)');
-}
-
-function deleteEmp(){
-  if(empEditId===null) return;
-  var name = EMPLOYEES[empEditId].name;
-  if(!confirm('Supprimer '+name+' ?')) return;
-  EMPLOYEES.splice(empEditId,1);
-  saveEmployees();
-  closeEmpModal();
-  renderEmpList();
-  toast('Employe supprime','var(--red)');
-}
-
-gid('modal-emp').addEventListener('click',function(e){ if(e.target===gid('modal-emp')) closeEmpModal(); });
-
-// =====================================================
-// BOOT
-// =====================================================
-window.bootApp=async function(){
-  renderAll();
-  var ok=await connectFirebase();
-  if(!ok){sync('','Erreur Firebase');toast('Impossible de se connecter','var(--red)');return;}
-  sync('sy','Chargement...');
-  try{
-    await fetchDays();
-    renderAll();
-    await loadEmployees();
-    loadPaieMonth();
-    renderEmpList();
-    if(Object.keys(LD).length>0)toast(Object.keys(LD).length+' jours charges','var(--green)');
-  }catch(e){sync('','Erreur chargement');toast('Erreur : '+e.message,'var(--red)');console.error(e);}
+// ─── CONFIG — remplacer les VOTRE_... par les valeurs de ta console Firebase ───
+const FB_CONFIG = {
+  apiKey:            "AIzaSyDUb3LtVsMAq986DgtHwkMBeQFr8A8A2nU",
+  authDomain:        "commandemoulesmile.firebaseapp.com",
+  projectId:         "commandemoulesmile",
+  storageBucket:     "commandemoulesmile.firebasestorage.app",
+  messagingSenderId: "303564394584",
+  appId:             "1:303564394584:web:cbde6960f99cac83517a2d"
 };
+if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+const db = firebase.firestore();
 
+// ─── RENDER FORMULES ───
+function renderFormules(f){
+  if(!f) return;
+  const s = (id, val) => { const el=document.getElementById(id); if(el && val!=null) el.textContent=val; };
+  s('fc-moules-name',        f.adulte_moules_name);
+  s('fc-moules-price',       f.adulte_moules_price);
+  s('fc-calamars-name',      f.adulte_calamars_name);
+  s('fc-calamars-price',     f.adulte_calamars_price);
+  s('fc-fish-name',          f.fish_name);
+  s('fc-fish-price',         f.fish_price);
+  s('enfant-tranche1-label', f.enfant_t1_label);
+  s('enfant-tranche1-price', f.enfant_t1_price);
+  s('enfant-tranche2-label', f.enfant_t2_label);
+  s('enfant-tranche2-price', f.enfant_t2_price);
+  s('enfant-desc',           f.enfant_desc);
+}
+
+// ─── RENDER SAUCES ───
+const SAUCES_DEFAULT = [
+  {name:'Marinière',      desc:'Vin blanc, échalote, persil — la classique indémodable.'},
+  {name:'Crème Échalote', desc:'Crème fraîche, échalotes dorées, touche de vin blanc.'},
+  {name:'Roquefort',      desc:'Crème, roquefort fondu, noix de muscade.'},
+  {name:'Curry',          desc:'Lait de coco, curry doux, coriandre fraîche.'},
+  {name:'Tomate Chorizo', desc:'Sauce tomate relevée, chorizo ibérique, paprika fumé.'},
+  {name:'Provençale',     desc:"Tomates, herbes de Provence, ail, huile d'olive."}
+];
+
+function renderSauces(sauces, sdm){
+  const grid = document.getElementById('sg-grid');
+  if(!grid) return;
+  const list = (sauces && sauces.length) ? sauces : SAUCES_DEFAULT;
+  grid.innerHTML = list.map((s,i) => `
+    <div class="sauce-card">
+      <div class="sauce-num">0${i+1}</div>
+      <div class="sauce-name">${s.name}</div>
+      <div class="sauce-desc">${s.desc||''}</div>
+    </div>`).join('');
+  if(sdm){
+    const el = document.getElementById('sdm-body-txt');
+    if(el) el.textContent = sdm;
+  }
+}
+
+// ─── RENDER HORAIRES ───
+function renderHoraires(h){
+  const el = document.getElementById('horaires-val');
+  if(!el || !h) return;
+  el.innerHTML = `
+    <div class="slot-card">
+      <div class="slot-time">Mai – Septembre</div>
+      <div class="slot-name">7 jours / 7</div>
+      <div class="slot-desc">${h.ete || '8h – 23h, service continu, petit-déjeuner inclus.'}</div>
+    </div>
+    <div class="slot-card">
+      <div class="slot-time">Mars, Avril & Octobre</div>
+      <div class="slot-name">Week-ends uniquement</div>
+      <div class="slot-desc">${h.intersaison || 'Vendredi soir, samedi et dimanche.'}</div>
+    </div>`;
+}
+
+// ─── CHARGEMENT FIREBASE ───
+async function loadSiteConfig(){
+  try {
+    const snap = await db.collection('site_config').doc('carte').get();
+    if(snap.exists){
+      const d = snap.data();
+      if(d.formules)               renderFormules(d.formules);
+      if(d.sauces && d.sauces.length) renderSauces(d.sauces, d.sauce_du_moment);
+      if(d.horaires)               renderHoraires(d.horaires);
+    }
+  } catch(err){
+    console.info('Moule & Smile · Firebase non disponible, contenu statique utilisé.', err.message);
+  }
+}
+loadSiteConfig();
 </script>
 </body>
 </html>

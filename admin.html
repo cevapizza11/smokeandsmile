@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<!-- v.01/10/2026 18:15 · Admin Moule & Smile · Firebase Firestore -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin · Moule & Smile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Cormorant:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+// ╔══════════════════════════════════════════════╗
+// ║  CONFIG FIREBASE — Moule & Smile             ║
+// ║  Projet : commandemoulesmile                 ║
+// ║  ⚠ Coller votre config depuis Firebase       ║
+// ╚══════════════════════════════════════════════╝
+const FB_CONFIG = {
+  apiKey:            "AIzaSyDUb3LtVsMAq986DgtHwkMBeQFr8A8A2nU",
+  authDomain:        "commandemoulesmile.firebaseapp.com",
+  projectId:         "commandemoulesmile",
+  storageBucket:     "commandemoulesmile.firebasestorage.app",
+  messagingSenderId: "303564394584",
+  appId:             "1:303564394584:web:cbde6960f99cac83517a2d"
+};
+if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+const db = firebase.firestore();
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#C9A84C; --gold2:#E8C86A; --bronze:#9A7020;
+  --night:#060503; --dark1:#0E0C08; --dark2:#1A1810; --dark3:#242018;
+  --iv:#FDF8EE; --sand:#F0E8D0; --muted:#6B5A30;
+  --ok:#2e7d52; --err:#9A3E20;
+}
+body{font-family:'Figtree',sans-serif;background:var(--night);color:var(--iv);min-height:100vh}
+
+/* ── PIN ── */
+#pin-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:2rem;padding:2rem}
+.pin-logo{font-size:1rem;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);opacity:.7}
+.pin-title{font-family:'Cormorant',serif;font-size:clamp(2rem,5vw,3.2rem);text-align:center;color:#fff}
+.pin-sub{font-size:.75rem;color:rgba(255,255,255,.35);letter-spacing:.12em;text-align:center}
+.pin-dots{display:flex;gap:.9rem}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.2);transition:all .2s}
+.pin-dot.filled{background:var(--gold);border-color:var(--gold);box-shadow:0 0 10px rgba(201,168,76,.4)}
+.pin-dot.wrong{background:var(--err);border-color:var(--err)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;width:min(280px,90vw)}
+.pin-btn{aspect-ratio:1;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);border-radius:12px;
+  font-size:1.5rem;font-weight:500;color:#fff;cursor:pointer;transition:all .15s;font-family:'Figtree',sans-serif}
+.pin-btn:hover{background:rgba(201,168,76,.15);border-color:var(--gold)}
+.pin-btn:active{transform:scale(.93)}
+.pin-err{color:var(--gold);font-size:.8rem;min-height:1.2em;text-align:center;letter-spacing:.06em}
+
+/* ── APP ── */
+#app{display:none;max-width:1000px;margin:0 auto;padding:2rem 1.5rem 5rem}
+.a-header{display:flex;align-items:center;justify-content:space-between;
+  padding:1.25rem 0;border-bottom:1px solid rgba(201,168,76,.15);margin-bottom:2.5rem}
+.a-logo{font-family:'Cormorant',serif;font-size:1.7rem;color:var(--gold)}
+.a-sub{font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:.15rem}
+.a-logout{font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;padding:.5rem .9rem;
+  border:1px solid rgba(255,255,255,.1);border-radius:6px;background:none;color:rgba(255,255,255,.3);
+  cursor:pointer;transition:all .2s;font-family:'Figtree',sans-serif}
+.a-logout:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:.25rem;margin-bottom:2.5rem;border-bottom:1px solid rgba(255,255,255,.06)}
+.tab{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;padding:.8rem 1.25rem;cursor:pointer;
+  border:none;border-bottom:2px solid transparent;background:none;color:rgba(255,255,255,.3);
+  transition:all .2s;font-family:'Figtree',sans-serif}
+.tab:hover{color:rgba(255,255,255,.6)}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.panel{display:none}.panel.active{display:block}
+.section-title{font-size:.65rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);opacity:.7;
+  margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:1px solid rgba(201,168,76,.1)}
+
+/* ── FORMULE CARDS ── */
+.prix-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;margin-bottom:2rem}
+.prix-card{background:rgba(255,255,255,.03);border:1px solid rgba(201,168,76,.12);border-radius:12px;padding:1.25rem;transition:border-color .2s}
+.prix-card:hover{border-color:rgba(201,168,76,.3)}
+.prix-card-ico{font-size:1.5rem;margin-bottom:.5rem}
+.prix-card-name{font-size:.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.prix-badge{display:inline-block;font-size:.55rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+  padding:.25rem .6rem;border-radius:99px;background:rgba(201,168,76,.12);color:var(--gold);margin-bottom:.75rem}
+.prix-badge.enfant{background:rgba(128,200,255,.1);color:#80c8ff}
+
+/* ── SAUCE CARDS ── */
+.sauce-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-bottom:2rem}
+.sauce-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:1.25rem;transition:border-color .2s}
+.sauce-card:hover{border-color:rgba(201,168,76,.25)}
+.sc-num{font-size:.6rem;font-weight:700;letter-spacing:.2em;color:var(--gold);margin-bottom:.35rem}
+
+/* ── INPUTS ── */
+label{display:block;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.35);
+  margin-bottom:.35rem;margin-top:.85rem}
+label:first-of-type{margin-top:0}
+input,textarea{width:100%;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.1);
+  border-radius:8px;color:#fff;font-family:'Figtree',sans-serif;font-size:.9rem;
+  padding:.65rem .9rem;transition:border-color .2s;resize:vertical}
+input:focus,textarea:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,.06)}
+textarea{min-height:72px}
+
+/* ── SDM ── */
+.sdm-card{background:linear-gradient(135deg,rgba(14,12,8,.8),rgba(30,22,5,.6));
+  border:1px solid rgba(201,168,76,.2);border-radius:14px;padding:1.75rem;margin-bottom:2rem}
+.sdm-card-title{font-family:'Cormorant',serif;font-size:1.2rem;color:var(--gold);margin-bottom:1.25rem}
+
+/* ── HORAIRES ── */
+.hor-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:1.5rem;margin-bottom:2rem}
+.hor-preview{margin-top:1rem;padding:1rem;background:rgba(255,255,255,.02);border-radius:8px;
+  font-family:'Cormorant',serif;font-size:1rem;line-height:1.75;color:rgba(255,255,255,.65);
+  border:1px dashed rgba(255,255,255,.06)}
+.hor-preview strong{color:var(--gold)}
+.hor-hint{font-size:.72rem;color:rgba(255,255,255,.25);margin-top:.5rem;line-height:1.6}
+
+/* ── ACTIONS ── */
+.a-actions{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-top:2rem;
+  padding-top:1.5rem;border-top:1px solid rgba(255,255,255,.05)}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 1.8rem;border-radius:8px;
+  font-size:.75rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;
+  border:none;font-family:'Figtree',sans-serif;transition:all .2s}
+.btn-primary{background:var(--gold);color:var(--night)}
+.btn-primary:hover{background:var(--gold2)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.status-msg{font-size:.8rem;padding:.5rem 1rem;border-radius:6px;transition:opacity .4s;opacity:0}
+.status-msg.ok{background:rgba(46,125,82,.2);color:#5ec97e;opacity:1}
+.status-msg.err{background:rgba(154,62,32,.2);color:#e8805e;opacity:1}
+
+.loading-bar{height:2px;background:linear-gradient(90deg,var(--gold),var(--gold2));
+  animation:lb .8s ease-in-out infinite alternate;margin-bottom:1rem}
+@keyframes lb{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}
+
+@media(max-width:600px){
+  .tabs{overflow-x:auto;gap:0}
+  .tab{white-space:nowrap;font-size:.6rem;padding:.7rem .9rem}
+  .prix-grid,.sauce-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════ PIN ══════════════════════ -->
+<div id="pin-screen">
+  <div class="pin-logo">Moule & Smile</div>
+  <div>
+    <div class="pin-title">Administration</div>
+    <p class="pin-sub" style="margin-top:.5rem">Entrez votre code PIN</p>
+  </div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinKey('1')">1</button>
+    <button class="pin-btn" onclick="pinKey('2')">2</button>
+    <button class="pin-btn" onclick="pinKey('3')">3</button>
+    <button class="pin-btn" onclick="pinKey('4')">4</button>
+    <button class="pin-btn" onclick="pinKey('5')">5</button>
+    <button class="pin-btn" onclick="pinKey('6')">6</button>
+    <button class="pin-btn" onclick="pinKey('7')">7</button>
+    <button class="pin-btn" onclick="pinKey('8')">8</button>
+    <button class="pin-btn" onclick="pinKey('9')">9</button>
+    <button class="pin-btn" onclick="pinKey('⌫')">⌫</button>
+    <button class="pin-btn" onclick="pinKey('0')">0</button>
+    <button class="pin-btn" onclick="pinKey('✓')">✓</button>
+  </div>
+  <div class="pin-err" id="pin-err"></div>
+</div>
+
+<!-- ══════════════════════ APP ══════════════════════ -->
+<div id="app">
+  <div class="a-header">
+    <div>
+      <div class="a-logo">Moule &amp; Smile</div>
+      <div class="a-sub">Gestion carte &amp; horaires</div>
+    </div>
+    <button class="a-logout" onclick="logout()">Déconnexion</button>
+  </div>
+
+  <div id="loading-bar" class="loading-bar" style="display:none"></div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('formules',this)">🍽️ Formules &amp; Prix</button>
+    <button class="tab" onclick="switchTab('sauces',this)">🦪 Les 6 sauces</button>
+    <button class="tab" onclick="switchTab('moment',this)">✨ Sauce du moment</button>
+    <button class="tab" onclick="switchTab('horaires',this)">🕐 Horaires</button>
+  </div>
+
+  <!-- ══ PANEL FORMULES & PRIX ══ -->
+  <div class="panel active" id="panel-formules">
+    <div class="section-title">Formules &amp; tarifs — modifiez les prix directement ici</div>
+
+    <div class="prix-grid">
+
+      <!-- MOULES ADULTE -->
+      <div class="prix-card">
+        <div class="prix-card-ico">🦪</div>
+        <div class="prix-badge">Adulte</div>
+        <div class="prix-card-name">Moules Frites</div>
+        <label>Nom affiché sur le site</label>
+        <input type="text" id="f-moules-name" value="Moules Frites"/>
+        <label>Prix (ex : 19,90)</label>
+        <input type="text" id="f-moules-price" value="19,90" placeholder="19,90"/>
+      </div>
+
+      <!-- CALAMARS ADULTE -->
+      <div class="prix-card">
+        <div class="prix-card-ico">🦑</div>
+        <div class="prix-badge">Adulte</div>
+        <div class="prix-card-name">Calamars Frites</div>
+        <label>Nom affiché sur le site</label>
+        <input type="text" id="f-calamars-name" value="Calamars Frites"/>
+        <label>Prix (ex : 19,90)</label>
+        <input type="text" id="f-calamars-price" value="19,90" placeholder="19,90"/>
+      </div>
+
+      <!-- FISH & CHIPS -->
+      <div class="prix-card">
+        <div class="prix-card-ico">🐟</div>
+        <div class="prix-badge">Adulte</div>
+        <div class="prix-card-name">Fish &amp; Chips</div>
+        <label>Nom affiché sur le site</label>
+        <input type="text" id="f-fish-name" value="Fish &amp; Chips"/>
+        <label>Prix (ex : 15,90)</label>
+        <input type="text" id="f-fish-price" value="15,90" placeholder="15,90"/>
+      </div>
+
+      <!-- ENFANT TRANCHE 1 -->
+      <div class="prix-card">
+        <div class="prix-card-ico">👶</div>
+        <div class="prix-badge enfant">Enfant</div>
+        <div class="prix-card-name">Tranche d'âge 1</div>
+        <label>Libellé (ex : 0 – 5 ans)</label>
+        <input type="text" id="f-enfant1-label" value="0 – 5 ans"/>
+        <label>Prix affiché (ex : Gratuit)</label>
+        <input type="text" id="f-enfant1-price" value="Gratuit" placeholder="Gratuit"/>
+      </div>
+
+      <!-- ENFANT TRANCHE 2 -->
+      <div class="prix-card">
+        <div class="prix-card-ico">🧒</div>
+        <div class="prix-badge enfant">Enfant</div>
+        <div class="prix-card-name">Tranche d'âge 2</div>
+        <label>Libellé (ex : 6 – 17 ans · Moules ou Calamars à volonté)</label>
+        <input type="text" id="f-enfant2-label" value="6 – 17 ans · Moules ou Calamars à volonté"/>
+        <label>Prix (ex : 15,90)</label>
+        <input type="text" id="f-enfant2-price" value="15,90" placeholder="15,90"/>
+      </div>
+
+      <!-- DESCRIPTION MENU ENFANT -->
+      <div class="prix-card" style="grid-column:1/-1">
+        <div class="prix-card-ico">📝</div>
+        <div class="prix-card-name">Texte description enfant</div>
+        <label>Description affichée sous le menu enfant</label>
+        <textarea id="f-enfant-desc" rows="3">Les 0–5 ans mangent gratuitement avec un adulte à table. De 6 à 17 ans : moules ou calamars à volonté, frites maison.</textarea>
+      </div>
+
+    </div>
+
+    <div class="a-actions">
+      <button class="btn btn-primary" onclick="saveFormules()" id="btn-save-formules">💾 Enregistrer les prix</button>
+      <div class="status-msg" id="msg-formules"></div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL SAUCES ══ -->
+  <div class="panel" id="panel-sauces">
+    <div class="section-title">Les six sauces permanentes</div>
+    <div class="sauce-grid" id="sauce-cards"></div>
+    <div class="a-actions">
+      <button class="btn btn-primary" onclick="saveSauces()" id="btn-save-sauces">💾 Enregistrer les sauces</button>
+      <div class="status-msg" id="msg-sauces"></div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL SAUCE DU MOMENT ══ -->
+  <div class="panel" id="panel-moment">
+    <div class="section-title">Sauce du moment — création hebdomadaire</div>
+    <div class="sdm-card">
+      <div class="sdm-card-title">✦ Sauce du moment</div>
+      <label>Nom de la sauce (ex : Beurre blanc aux herbes)</label>
+      <input type="text" id="sdm-name" placeholder="Laissez vide pour afficher 'du moment' générique"/>
+      <label>Description</label>
+      <textarea id="sdm-body" rows="4" placeholder="Description de la sauce du moment…"></textarea>
+      <p style="font-size:.7rem;color:rgba(255,255,255,.25);margin-top:.6rem">Utilisez &lt;strong&gt;mot&lt;/strong&gt; pour un mot en relief doré.</p>
+    </div>
+    <div class="a-actions">
+      <button class="btn btn-primary" onclick="saveSdm()" id="btn-save-sdm">💾 Enregistrer</button>
+      <div class="status-msg" id="msg-sdm"></div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL HORAIRES ══ -->
+  <div class="panel" id="panel-horaires">
+    <div class="section-title">Horaires d'ouverture</div>
+    <div class="hor-card">
+      <label>Texte des horaires</label>
+      <textarea id="hor-text" rows="5" placeholder="Ex: Ouvert du mardi au dimanche&#10;Midi : 12h – 14h30&#10;Soir : 19h – 22h30"></textarea>
+      <p class="hor-hint">Retours à la ligne = &lt;br&gt; sur le site. Utilisez &lt;strong&gt;texte&lt;/strong&gt; pour mettre en gras (couleur or).</p>
+      <div class="hor-preview" id="hor-preview">Aperçu en direct…</div>
+    </div>
+    <div class="a-actions">
+      <button class="btn btn-primary" onclick="saveHoraires()" id="btn-save-hor">💾 Enregistrer</button>
+      <div class="status-msg" id="msg-hor"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  PIN — personnalisez votre code ici
+// ══════════════════════════════════════════
+const ADMIN_PIN = '1234'; // ← remplacez par votre PIN à 4 chiffres
+
+let pinBuffer = '';
+
+function pinKey(k){
+  const err = document.getElementById('pin-err');
+  if(k==='⌫'){ pinBuffer=pinBuffer.slice(0,-1); updateDots(); err.textContent=''; return; }
+  if(k==='✓' || pinBuffer.length===4){ if(k!=='✓'&&k!=='⌫'){pinBuffer+=k;updateDots();} checkPin(); return; }
+  if(pinBuffer.length<4){ pinBuffer+=k; updateDots(); if(pinBuffer.length===4) setTimeout(checkPin,120); }
+}
+function updateDots(){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('pd'+i);
+    d.classList.toggle('filled',i<pinBuffer.length);
+    d.classList.remove('wrong');
+  }
+}
+function checkPin(){
+  if(pinBuffer===ADMIN_PIN){
+    document.getElementById('pin-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    loadData();
+  } else {
+    for(let i=0;i<4;i++) document.getElementById('pd'+i).classList.add('wrong');
+    document.getElementById('pin-err').textContent='Code incorrect';
+    setTimeout(()=>{pinBuffer='';updateDots();document.getElementById('pin-err').textContent='';},1200);
+  }
+}
+function logout(){ pinBuffer=''; updateDots(); document.getElementById('app').style.display='none'; document.getElementById('pin-screen').style.display='flex'; }
+
+// ══════════════════════════════════════════
+//  DONNÉES PAR DÉFAUT
+// ══════════════════════════════════════════
+const SAUCES_DEFAULT = [
+  {num:"I",  style:"01 · Classique",   name:"Marinière",          base:"Vin blanc · Échalotes · Persil",   desc:"La recette originale. Vin blanc, échalotes confites, persil frais et beurre de qualité. L'incontournable absolu."},
+  {num:"II", style:"02 · Raffinée",    name:"Crème & Safran",     base:"Crème · Safran · Méditerranée",    desc:"Crème légère infusée au safran pour un parfum subtil et une couleur solaire. Une touche de mer dorée."},
+  {num:"III",style:"03 · Ensoleillée", name:"Provençale",         base:"Tomate · Ail · Herbes",            desc:"Tomates mûres, ail, herbes de Provence et huile d'olive. Le soleil du Languedoc dans votre marmite."},
+  {num:"IV", style:"04 · Caractère",   name:"Roquefort",          base:"Roquefort · Crème · Audace",       desc:"Le Roquefort fondu dans une sauce onctueuse qui enrobe chaque coquille. Pour les audacieux."},
+  {num:"V",  style:"05 · Exotique",    name:"Curry Coco",         base:"Lait de coco · Curry · Coriandre", desc:"Lait de coco, curry doux et coriandre fraîche. Un voyage gustatif à quelques mètres de la plage."},
+  {num:"VI", style:"06 · Ibérique",    name:"Chorizo & Pimentón", base:"Chorizo · Pimentón · Fumé",        desc:"Chorizo fondant et pimentón fumé dans une sauce généreuse aux accents ibériques chaleureux."}
+];
+
+let currentData = {
+  sauces: [...SAUCES_DEFAULT],
+  sauce_du_moment: {name:'', body:''},
+  horaires: '',
+  formules: {}
+};
+
+// ══════════════════════════════════════════
+//  CHARGEMENT FIRESTORE
+// ══════════════════════════════════════════
+async function loadData(){
+  const lb = document.getElementById('loading-bar');
+  lb.style.display='block';
+  try {
+    const snap = await db.collection('site_config').doc('carte').get();
+    if(snap.exists){
+      const d = snap.data();
+      if(d.sauces && d.sauces.length) currentData.sauces = d.sauces;
+      if(d.sauce_du_moment) currentData.sauce_du_moment = d.sauce_du_moment;
+      if(d.horaires) currentData.horaires = d.horaires;
+      if(d.formules) currentData.formules = d.formules;
+    }
+  } catch(e){
+    showMsg('msg-formules','Impossible de charger Firestore : '+e.message,'err');
+  }
+  lb.style.display='none';
+  renderFormuleForm();
+  renderSauceCards();
+  renderSdmForm();
+  renderHorairesForm();
+}
+
+// ══════════════════════════════════════════
+//  RENDER FORMULES
+// ══════════════════════════════════════════
+function renderFormuleForm(){
+  const f = currentData.formules || {};
+  const set = (id,v) => { const el=document.getElementById(id); if(el&&v) el.value=v; };
+  set('f-moules-name',    f.adulte_moules_name);
+  set('f-moules-price',   f.adulte_moules_price);
+  set('f-calamars-name',  f.adulte_calamars_name);
+  set('f-calamars-price', f.adulte_calamars_price);
+  set('f-fish-name',      f.fish_name);
+  set('f-fish-price',     f.fish_price);
+  set('f-enfant1-label',  f.enfant_t1_label);
+  set('f-enfant1-price',  f.enfant_t1_price);
+  set('f-enfant2-label',  f.enfant_t2_label);
+  set('f-enfant2-price',  f.enfant_t2_price);
+  set('f-enfant-desc',    f.enfant_desc);
+}
+
+// ══════════════════════════════════════════
+//  RENDER SAUCES
+// ══════════════════════════════════════════
+function renderSauceCards(){
+  const grid = document.getElementById('sauce-cards');
+  grid.innerHTML = currentData.sauces.map((s,i)=>`
+    <div class="sauce-card">
+      <div class="sc-num">SAUCE ${s.num}</div>
+      <div style="font-size:.65rem;color:rgba(255,255,255,.3);margin-bottom:1rem;letter-spacing:.1em">${s.style}</div>
+      <label>Nom</label>
+      <input type="text" id="s${i}-name" value="${esc(s.name)}"/>
+      <label>Ingrédients clés</label>
+      <input type="text" id="s${i}-base" value="${esc(s.base)}"/>
+      <label>Description</label>
+      <textarea id="s${i}-desc" rows="3">${esc(s.desc)}</textarea>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+//  RENDER SDM FORM
+// ══════════════════════════════════════════
+function renderSdmForm(){
+  const sdm = currentData.sauce_du_moment||{};
+  document.getElementById('sdm-name').value = sdm.name||'';
+  document.getElementById('sdm-body').value = sdm.body||'';
+}
+
+// ══════════════════════════════════════════
+//  RENDER HORAIRES FORM
+// ══════════════════════════════════════════
+function renderHorairesForm(){
+  const h = currentData.horaires||'';
+  const el = document.getElementById('hor-text');
+  el.value = h.replace(/<br\s*\/?>/gi,'\n').replace(/<strong>(.*?)<\/strong>/gi,'$1');
+  updateHorPreview();
+  el.addEventListener('input',updateHorPreview);
+}
+function updateHorPreview(){
+  const raw = document.getElementById('hor-text').value;
+  const html = raw.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  document.getElementById('hor-preview').innerHTML = html||'<em style="opacity:.4">Aperçu…</em>';
+}
+
+// ══════════════════════════════════════════
+//  SAUVEGARDE
+// ══════════════════════════════════════════
+async function saveFormules(){
+  const btn=document.getElementById('btn-save-formules');
+  btn.disabled=true;
+  const g = id => document.getElementById(id)?.value.trim();
+  const f = {
+    adulte_moules_name:    g('f-moules-name'),
+    adulte_moules_price:   g('f-moules-price'),
+    adulte_calamars_name:  g('f-calamars-name'),
+    adulte_calamars_price: g('f-calamars-price'),
+    fish_name:             g('f-fish-name'),
+    fish_price:            g('f-fish-price'),
+    enfant_t1_label:       g('f-enfant1-label'),
+    enfant_t1_price:       g('f-enfant1-price'),
+    enfant_t2_label:       g('f-enfant2-label'),
+    enfant_t2_price:       g('f-enfant2-price'),
+    enfant_desc:           g('f-enfant-desc')
+  };
+  try {
+    await db.collection('site_config').doc('carte').set({formules:f},{merge:true});
+    currentData.formules=f;
+    showMsg('msg-formules','✓ Prix mis à jour sur le site !','ok');
+  } catch(e){
+    showMsg('msg-formules','Erreur : '+e.message,'err');
+  }
+  btn.disabled=false;
+}
+
+async function saveSauces(){
+  const btn=document.getElementById('btn-save-sauces');
+  btn.disabled=true;
+  const sauces=currentData.sauces.map((s,i)=>({
+    num:s.num, style:s.style,
+    name:document.getElementById('s'+i+'-name').value.trim(),
+    base:document.getElementById('s'+i+'-base').value.trim(),
+    desc:document.getElementById('s'+i+'-desc').value.trim()
+  }));
+  try {
+    await db.collection('site_config').doc('carte').set({sauces},{merge:true});
+    currentData.sauces=sauces;
+    showMsg('msg-sauces','✓ Sauces sauvegardées !','ok');
+  } catch(e){
+    showMsg('msg-sauces','Erreur : '+e.message,'err');
+  }
+  btn.disabled=false;
+}
+
+async function saveSdm(){
+  const btn=document.getElementById('btn-save-sdm');
+  btn.disabled=true;
+  const sdm={name:document.getElementById('sdm-name').value.trim(),body:document.getElementById('sdm-body').value.trim()};
+  try {
+    await db.collection('site_config').doc('carte').set({sauce_du_moment:sdm},{merge:true});
+    currentData.sauce_du_moment=sdm;
+    showMsg('msg-sdm','✓ Sauce du moment mise à jour !','ok');
+  } catch(e){ showMsg('msg-sdm','Erreur : '+e.message,'err'); }
+  btn.disabled=false;
+}
+
+async function saveHoraires(){
+  const btn=document.getElementById('btn-save-hor');
+  btn.disabled=true;
+  const raw=document.getElementById('hor-text').value.trim();
+  const html=raw.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  try {
+    await db.collection('site_config').doc('carte').set({horaires:html},{merge:true});
+    currentData.horaires=html;
+    showMsg('msg-hor','✓ Horaires mis à jour !','ok');
+  } catch(e){ showMsg('msg-hor','Erreur : '+e.message,'err'); }
+  btn.disabled=false;
+}
+
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+function switchTab(name,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showMsg(id,txt,type){
+  const el=document.getElementById(id);
+  el.textContent=txt; el.className='status-msg '+type;
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>{el.className='status-msg';el.textContent='';},4000);
+}
+</script>
+</body>
+</html>
